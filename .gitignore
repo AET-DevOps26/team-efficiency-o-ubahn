@@ -1,0 +1,84 @@
+# ---------- OS ----------
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# ---------- IDEs / Editors ----------
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json
+.project
+.classpath
+.settings/
+.factorypath
+.metadata/
+*.sublime-workspace
+*.sublime-project
+*.swp
+*.swo
+*~
+.\#*
+\#*\#
+
+# ---------- Environment / secrets ----------
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+secrets.*
+
+# ---------- Logs ----------
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ---------- Node / JavaScript ----------
+node_modules/
+dist/
+dist-ssr/
+build/
+coverage/
+.cache/
+.parcel-cache/
+.next/
+.nuxt/
+.turbo/
+*.tsbuildinfo
+*.local
+
+# ---------- Java / Gradle / Maven ----------
+target/
+out/
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+hs_err_pid*
+.gradle/
+gradle-app.setting
+!gradle-wrapper.jar
+.mvn/
+mvnw
+mvnw.cmd
+
+# ---------- Misc ----------
+tmp/
+temp/
+*.bak
+*.tmp
+*.orig
