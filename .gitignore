@@ -1,0 +1,49 @@
+# Ignore IntelliJ IDEA project files
+.idea/
+
+# Ignore build outputs
+backend/build/
+backend/tmp/
+
+# Ignore Gradle wrapper files
+backend/gradle/wrapper/
+
+# Ignore additional Gradle files
+backend/.gradle/
+backend/gradle.properties
+backend/gradlew
+backend/gradlew.bat
+
+# Ignore application properties
+backend/resources/main/application.properties
+
+# Ignore OS-specific files
+.DS_Store
+Thumbs.db
+
+# Ignore logs
+*.log
+
+# Ignore temporary files
+*.tmp
+*.bak
+
+# Ignore compiled Java classes
+backend/classes/
+
+# Ignore generated sources
+backend/generated/
+
+# Ignore other IDE-specific files
+*.iml
+*.ipr
+*.iws
+
+# Ignore Git merge conflict files
+*.orig
+
+# Ignore node_modules (if applicable)
+Client/node_modules/
+
+# Ignore Vite dependency files
+Client/.vite/
