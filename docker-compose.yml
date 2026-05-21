@@ -1,0 +1,84 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: fridgeai-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: fridgeai
+      POSTGRES_USER: fridgeai
+      POSTGRES_PASSWORD: fridgeai
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./infra/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fridgeai -d fridgeai"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  user-service:
+    build:
+      context: ./backend
+      dockerfile: user-service/Dockerfile
+    container_name: fridgeai-user-service
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/fridgeai
+      SPRING_DATASOURCE_USERNAME: fridgeai
+      SPRING_DATASOURCE_PASSWORD: fridgeai
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  inventory-service:
+    build:
+      context: ./backend
+      dockerfile: inventory-service/Dockerfile
+    container_name: fridgeai-inventory-service
+    restart: unless-stopped
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/fridgeai
+      SPRING_DATASOURCE_USERNAME: fridgeai
+      SPRING_DATASOURCE_PASSWORD: fridgeai
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  recipe-service:
+    build:
+      context: ./backend
+      dockerfile: recipe-service/Dockerfile
+    container_name: fridgeai-recipe-service
+    restart: unless-stopped
+    ports:
+      - "8083:8083"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/fridgeai
+      SPRING_DATASOURCE_USERNAME: fridgeai
+      SPRING_DATASOURCE_PASSWORD: fridgeai
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  client:
+    build:
+      context: ./Client
+      dockerfile: Dockerfile
+    container_name: fridgeai-client
+    restart: unless-stopped
+    ports:
+      - "5173:80"
+    depends_on:
+      - user-service
+      - inventory-service
+      - recipe-service
+
+volumes:
+  postgres-data:
