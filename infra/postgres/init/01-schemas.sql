@@ -1,0 +1,3 @@
+CREATE SCHEMA IF NOT EXISTS user_service;
+CREATE SCHEMA IF NOT EXISTS inventory_service;
+CREATE SCHEMA IF NOT EXISTS recipe_service;
