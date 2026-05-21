@@ -2,7 +2,7 @@
 
 ## Main Functionality
 
-FridgeAI is a recipe generation app where users input the ingredients they currently have at home and receive personalised recipe suggestions. Users can manage their ingredient inventory with expiry dates, set dietary preferences and allergies, and save favourite recipes for later.
+FridgeAI is a recipe generation app where users input the ingredients they currently have at home and receive personalised recipe suggestions. Users can manage their ingredient inventory with expiry dates, set allergies and a diet focus, and save favourite recipes for later.
 
 ---
 
@@ -32,5 +32,5 @@ A student adds eggs, cheese, and leftover pasta to their inventory. FridgeAI gen
 **Scenario 4 — Expiry Alerts**
 The app highlights ingredients close to expiry on the dashboard and prioritises them when generating the next recipe suggestion.
 
-**Scenario 5 — Nutrition Goal**
-A user sets a high-protein goal in their preferences. FridgeAI adjusts its recipe suggestions accordingly, prioritising protein-rich ingredients like eggs, chicken, or legumes from their inventory and indicating the estimated protein content per serving.
+**Scenario 5 — Diet Focus**
+A user sets their diet focus in their preferences (e.g. protein-focused, carb-focused, fat-focused, or veggie-focused). FridgeAI adjusts its recipe suggestions accordingly, leaning on ingredients from their inventory that match the chosen focus — for example, prioritising eggs, chicken, or legumes when the focus is protein, or vegetables and legumes when the focus is veggie.

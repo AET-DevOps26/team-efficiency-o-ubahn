@@ -1,1 +1,5 @@
 rootProject.name = 'backend'
+
+include 'user-service'
+include 'inventory-service'
+include 'recipe-service'

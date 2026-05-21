@@ -41,13 +41,16 @@ classDiagram
     }
     class Preference {
         +Long id
+        +Long userId
         +List~String~ allergies
+        +String dietFocus
     }
     class Ingredient {
         +Long id
+        +Long inventoryId
         +String name
         +Double quantity
-        +String unit
+        +Unit unit
         +LocalDate expiryDate
     }
     class Inventory {
@@ -62,15 +65,29 @@ classDiagram
         +String nutritionInfo
     }
     class RecipeIngredient {
+        +Long recipeId
         +String name
         +String amount
     }
     class Favourite {
         +Long id
         +Long userId
+        +Long recipeId
         +LocalDateTime savedAt
     }
-
+    class Unit {
+        <<enumeration>>
+        GRAM
+        KILOGRAM
+        MILLILITRE
+        LITRE
+        PIECE
+        SLICE
+        CLOVE
+        TEASPOON
+        TABLESPOON
+        CUP
+    }
     User "1" --> "1" Preference : has
     User "1" --> "1" Inventory : owns
     Inventory "1" --> "*" Ingredient : contains
