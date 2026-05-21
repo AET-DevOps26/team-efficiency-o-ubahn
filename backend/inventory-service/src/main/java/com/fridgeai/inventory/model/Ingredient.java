@@ -1,9 +1,10 @@
-package com.fridgeai.backend.model;
+package com.fridgeai.inventory.model;
 
 import jakarta.persistence.*;
 import java.time.LocalDate;
 
 @Entity
+@Table(name = "ingredient")
 public class Ingredient {
 
     @Id
@@ -14,6 +15,10 @@ public class Ingredient {
     private Double quantity;
     private String unit;
     private LocalDate expiryDate;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "inventory_id")
+    private Inventory inventory;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -29,4 +34,7 @@ public class Ingredient {
 
     public LocalDate getExpiryDate() { return expiryDate; }
     public void setExpiryDate(LocalDate expiryDate) { this.expiryDate = expiryDate; }
+
+    public Inventory getInventory() { return inventory; }
+    public void setInventory(Inventory inventory) { this.inventory = inventory; }
 }

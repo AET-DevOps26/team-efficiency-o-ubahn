@@ -57,6 +57,7 @@ coverage/
 .next/
 .nuxt/
 .turbo/
+.vite/
 *.tsbuildinfo
 *.local
 
