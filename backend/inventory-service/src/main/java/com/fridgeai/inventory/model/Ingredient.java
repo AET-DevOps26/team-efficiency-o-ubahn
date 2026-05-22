@@ -13,7 +13,10 @@ public class Ingredient {
 
     private String name;
     private Double quantity;
-    private String unit;
+
+    @Enumerated(EnumType.STRING)
+    private Unit unit;
+
     private LocalDate expiryDate;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -29,8 +32,8 @@ public class Ingredient {
     public Double getQuantity() { return quantity; }
     public void setQuantity(Double quantity) { this.quantity = quantity; }
 
-    public String getUnit() { return unit; }
-    public void setUnit(String unit) { this.unit = unit; }
+    public Unit getUnit() { return unit; }
+    public void setUnit(Unit unit) { this.unit = unit; }
 
     public LocalDate getExpiryDate() { return expiryDate; }
     public void setExpiryDate(LocalDate expiryDate) { this.expiryDate = expiryDate; }
