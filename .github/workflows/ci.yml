@@ -21,7 +21,9 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       - name: Build ${{ matrix.service }}
         working-directory: backend
-        run: ./gradlew :${{ matrix.service }}:bootJar --no-daemon
+        run: |
+          chmod +x gradlew
+          ./gradlew :${{ matrix.service }}:bootJar --no-daemon
 
   client:
     runs-on: ubuntu-latest
