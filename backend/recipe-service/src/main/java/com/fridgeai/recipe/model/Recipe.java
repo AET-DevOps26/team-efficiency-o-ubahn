@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import java.util.ArrayList;
 import java.util.List;
 
+@com.fasterxml.jackson.annotation.JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Entity
 @Table(name = "recipe")
 public class Recipe {
@@ -20,7 +21,7 @@ public class Recipe {
     private Integer prepTimeMinutes;
     private String nutritionInfo;
 
-    @OneToMany(mappedBy = "recipe", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "recipe", cascade = CascadeType.ALL, orphanRemoval = true, fetch = jakarta.persistence.FetchType.EAGER)
     private List<RecipeIngredient> ingredients = new ArrayList<>();
 
     public Long getId() { return id; }

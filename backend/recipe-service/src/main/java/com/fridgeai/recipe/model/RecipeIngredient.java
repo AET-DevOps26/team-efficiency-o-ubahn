@@ -13,6 +13,7 @@ public class RecipeIngredient {
     private String name;
     private String amount;
 
+    @com.fasterxml.jackson.annotation.JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "recipe_id")
     private Recipe recipe;

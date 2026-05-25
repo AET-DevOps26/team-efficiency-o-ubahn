@@ -19,6 +19,7 @@ public class Ingredient {
 
     private LocalDate expiryDate;
 
+    @com.fasterxml.jackson.annotation.JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "inventory_id")
     private Inventory inventory;
