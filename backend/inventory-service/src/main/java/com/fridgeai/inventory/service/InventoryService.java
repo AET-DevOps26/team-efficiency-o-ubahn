@@ -5,7 +5,9 @@ import com.fridgeai.inventory.model.Ingredient;
 import com.fridgeai.inventory.model.Inventory;
 import com.fridgeai.inventory.repository.IngredientRepository;
 import com.fridgeai.inventory.repository.InventoryRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -32,6 +34,16 @@ public class InventoryService {
         ingredient.setUnit(request.getUnit());
         ingredient.setExpiryDate(request.getExpiryDate());
         ingredient.setInventory(inventory);
+        return ingredientRepository.save(ingredient);
+    }
+
+    public Ingredient updateIngredient(Long id, IngredientRequest request) {
+        Ingredient ingredient = ingredientRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ingredient not found"));
+        ingredient.setName(request.getName());
+        ingredient.setQuantity(request.getQuantity());
+        ingredient.setUnit(request.getUnit());
+        ingredient.setExpiryDate(request.getExpiryDate());
         return ingredientRepository.save(ingredient);
     }
 

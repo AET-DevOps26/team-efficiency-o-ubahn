@@ -33,6 +33,11 @@ public class RecipeController {
         return ResponseEntity.ok(recipeService.getRecipeById(id));
     }
 
+    @PostMapping("/generate")
+    public ResponseEntity<Recipe> generateRecipe(Principal principal) {
+        return ResponseEntity.ok(recipeService.generateRecipe(principal.getName()));
+    }
+
     @PostMapping
     public ResponseEntity<Recipe> createRecipe(@RequestBody RecipeRequest request) {
         return ResponseEntity.ok(recipeService.createRecipe(request));

@@ -29,6 +29,16 @@ public class InventoryController {
         return ResponseEntity.ok(inventoryService.addIngredient(principal.getName(), request));
     }
 
+    @GetMapping("/internal/{userEmail}")
+    public ResponseEntity<List<Ingredient>> getIngredientsByEmail(@PathVariable String userEmail) {
+        return ResponseEntity.ok(inventoryService.getIngredients(userEmail));
+    }
+
+    @PutMapping("/items/{id}")
+    public ResponseEntity<Ingredient> updateItem(@PathVariable Long id, @RequestBody IngredientRequest request) {
+        return ResponseEntity.ok(inventoryService.updateIngredient(id, request));
+    }
+
     @DeleteMapping("/items/{id}")
     public ResponseEntity<Void> deleteItem(@PathVariable Long id) {
         inventoryService.deleteIngredient(id);

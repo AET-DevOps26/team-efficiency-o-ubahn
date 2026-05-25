@@ -1,13 +1,19 @@
 package com.fridgeai.recipe.service;
 
+import com.fridgeai.recipe.dto.IngredientDto;
+import com.fridgeai.recipe.dto.PreferenceDto;
 import com.fridgeai.recipe.dto.RecipeRequest;
 import com.fridgeai.recipe.model.Favourite;
 import com.fridgeai.recipe.model.Recipe;
 import com.fridgeai.recipe.model.RecipeIngredient;
 import com.fridgeai.recipe.repository.FavouriteRepository;
 import com.fridgeai.recipe.repository.RecipeRepository;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
@@ -17,10 +23,18 @@ public class RecipeService {
 
     private final RecipeRepository recipeRepository;
     private final FavouriteRepository favouriteRepository;
+    private final RestTemplate restTemplate;
 
-    public RecipeService(RecipeRepository recipeRepository, FavouriteRepository favouriteRepository) {
+    @Value("${inventory.service.url}")
+    private String inventoryServiceUrl;
+
+    @Value("${user.service.url}")
+    private String userServiceUrl;
+
+    public RecipeService(RecipeRepository recipeRepository, FavouriteRepository favouriteRepository, RestTemplate restTemplate) {
         this.recipeRepository = recipeRepository;
         this.favouriteRepository = favouriteRepository;
+        this.restTemplate = restTemplate;
     }
 
     public List<Recipe> getAllRecipes() {
@@ -62,6 +76,22 @@ public class RecipeService {
         fav.setUserEmail(userEmail);
         fav.setRecipe(recipe);
         return favouriteRepository.save(fav);
+    }
+
+    public Recipe generateRecipe(String userEmail) {
+        List<IngredientDto> ingredients = restTemplate.exchange(
+                inventoryServiceUrl + "/api/inventory/internal/" + userEmail,
+                HttpMethod.GET, null,
+                new ParameterizedTypeReference<List<IngredientDto>>() {}
+        ).getBody();
+
+        PreferenceDto preferences = restTemplate.getForObject(
+                userServiceUrl + "/api/preferences/internal/" + userEmail,
+                PreferenceDto.class
+        );
+
+        // TODO: call AI service with ingredients and preferences to generate recipe
+        throw new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED, "AI integration pending");
     }
 
     public void removeFavourite(String userEmail, Long recipeId) {
