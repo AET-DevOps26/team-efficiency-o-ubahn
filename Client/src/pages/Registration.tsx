@@ -1,67 +1,56 @@
 import { useState } from 'react';
 import backgroundImageFile from '../assets/chef.jpg';
 
-interface LoginProps {
-    onLoginSuccess: () => void;
-    onToggleView: () => void; // Callback to switch to Register view
+interface RegisterProps {
+    onRegisterSuccess: () => void;
+    onToggleView: () => void; // Callback to switch back to Login view
 }
 
-function Login({ onLoginSuccess, onToggleView }: LoginProps) {
+function Register({ onRegisterSuccess, onToggleView }: RegisterProps) {
+    const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
 
-    // Use React.FormEvent right here directly on the parameter
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
 
-        // 1. Fetch any registered credentials from localStorage
-        const registeredEmail = localStorage.getItem('mock_registered_email');
-        const registeredPassword = localStorage.getItem('mock_registered_password');
-
-        // 2. Check against registered account OR fall back to default credentials
-        const isValidUser = (email === registeredEmail && password === registeredPassword);
-        const isValidDefault = (email === 'mared@tum.de' && password === '123456');
-
-        if (isValidUser || isValidDefault) {
-            localStorage.setItem('fridgeai_token', 'mock-jwt-token-abcdef123456');
-            alert('Mock Login Successful! Redirecting...');
-            onLoginSuccess();
-        } else {
-            if (registeredEmail) {
-                alert(`Mock Login Failed! Use your registered credentials or default: mared@tum.de / 123456`);
-            } else {
-                alert('Mock Login Failed! Hint: Use mared@tum.de and password 123456');
-            }
+        if (password !== confirmPassword) {
+            alert('Passwords do not match!');
+            return;
         }
+
+        console.log('Saving mock registration to localStorage...', { username, email });
+        localStorage.setItem('mock_registered_email', email);
+        localStorage.setItem('mock_registered_password', password);
+        localStorage.setItem('mock_registered_username', username);
+
         /*
         try {
-          const response = await fetch('http://localhost:8081/api/auth/login', {
+          const response = await fetch('http://localhost:8081/api/auth/register', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ email, password }),
+            body: JSON.stringify({ username, email, password }),
           });
 
           if (!response.ok) {
-            throw new Error('Invalid email or password');
+            throw new Error('Registration failed');
           }
 
-          const data = await response.json();
-          localStorage.setItem('fridgeai_token', data.token);
-
-          alert('Login successful! Redirecting...');
-          // handleLoginSuccess(); // Trigger redirect here
+          alert('Registration successful! Redirecting to login...');
+          onRegisterSuccess();
           return;
         } catch (error: any) {
-          console.error('Production login failed:', error);
+          console.error('Production registration failed:', error);
           alert(error.message || 'Server error connection failed.');
           return;
         }
         */
 
-        //mock login for now
-        console.log('Running mock authentication for testing...');
+        alert('Mock Registration Successful! Account Created.');
+        onRegisterSuccess();
     };
 
     const fullscreenContainer: React.CSSProperties = {
@@ -79,7 +68,8 @@ function Login({ onLoginSuccess, onToggleView }: LoginProps) {
         justifyContent: 'center',
         alignItems: 'center',
     };
-    const loginCard: React.CSSProperties = {
+
+    const registerCard: React.CSSProperties = {
         width: '100%',
         maxWidth: '400px',
         padding: '30px',
@@ -87,13 +77,27 @@ function Login({ onLoginSuccess, onToggleView }: LoginProps) {
         border: '1px solid #ccc',
         borderRadius: '12px',
         boxShadow: '0 8px 24px rgba(0, 0, 0, 0.2)',
-        boxSizing: 'border-box'
+        boxSizing: 'border-box',
+        color: '#ffffff' // Keeps text readable against the dark card opacity
     };
+
     return (
         <div style={fullscreenContainer}>
-            <div style={loginCard}>
-                <h2>FridgeAI Login</h2>
+            <div style={registerCard}>
+                <h2 style={{ marginTop: 0 }}>FridgeAI Register</h2>
                 <form onSubmit={handleSubmit}>
+
+                    <div style={{ marginBottom: '15px' }}>
+                        <label style={{ display: 'block', marginBottom: '5px' }}>Username:</label>
+                        <input
+                            type="text"
+                            value={username}
+                            onChange={(e) => setUsername(e.target.value)}
+                            placeholder="mared_prime"
+                            required
+                            style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
+                        />
+                    </div>
 
                     <div style={{ marginBottom: '15px' }}>
                         <label style={{ display: 'block', marginBottom: '5px' }}>Email Address:</label>
@@ -119,17 +123,30 @@ function Login({ onLoginSuccess, onToggleView }: LoginProps) {
                         />
                     </div>
 
+                    <div style={{ marginBottom: '20px' }}>
+                        <label style={{ display: 'block', marginBottom: '5px' }}>Confirm Password:</label>
+                        <input
+                            type="password"
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            placeholder="••••••••"
+                            required
+                            style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
+                        />
+                    </div>
+
                     <button type="submit" style={{ width: '100%', padding: '10px', backgroundColor: '#0065BD', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
-                        Sign In
+                        Sign Up
                     </button>
                 </form>
+
                 <div style={{ textAlign: 'center', fontSize: '14px', marginTop: '10px' }}>
-                    Don't have an account yet?{' '}
+                    Already have an account?{' '}
                     <span
                         onClick={onToggleView}
                         style={{ color: '#0065BD', cursor: 'pointer', textDecoration: 'underline' }}
                     >
-                        Register here
+                        Login here
                     </span>
                 </div>
             </div>
@@ -137,4 +154,4 @@ function Login({ onLoginSuccess, onToggleView }: LoginProps) {
     );
 }
 
-export default Login;
+export default Register;
