@@ -10,58 +10,25 @@ function Login({ onLoginSuccess, onToggleView }: LoginProps) {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
 
-    // Use React.FormEvent right here directly on the parameter
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-
-        // 1. Fetch any registered credentials from localStorage
-        const registeredEmail = localStorage.getItem('mock_registered_email');
-        const registeredPassword = localStorage.getItem('mock_registered_password');
-
-        // 2. Check against registered account OR fall back to default credentials
-        const isValidUser = (email === registeredEmail && password === registeredPassword);
-        const isValidDefault = (email === 'mared@tum.de' && password === '123456');
-
-        if (isValidUser || isValidDefault) {
-            localStorage.setItem('fridgeai_token', 'mock-jwt-token-abcdef123456');
-            alert('Mock Login Successful! Redirecting...');
-            onLoginSuccess();
-        } else {
-            if (registeredEmail) {
-                alert(`Mock Login Failed! Use your registered credentials or default: mared@tum.de / 123456`);
-            } else {
-                alert('Mock Login Failed! Hint: Use mared@tum.de and password 123456');
-            }
-        }
-        /*
         try {
-          const response = await fetch('http://localhost:8081/api/auth/login', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ email, password }),
-          });
+            const response = await fetch('http://localhost:8081/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password }),
+            });
 
-          if (!response.ok) {
-            throw new Error('Invalid email or password');
-          }
+            if (!response.ok) {
+                throw new Error('Invalid email or password');
+            }
 
-          const data = await response.json();
-          localStorage.setItem('fridgeai_token', data.token);
-
-          alert('Login successful! Redirecting...');
-          // handleLoginSuccess(); // Trigger redirect here
-          return;
+            const data = await response.json();
+            localStorage.setItem('fridgeai_token', data.token);
+            onLoginSuccess();
         } catch (error: any) {
-          console.error('Production login failed:', error);
-          alert(error.message || 'Server error connection failed.');
-          return;
+            alert(error.message || 'Login failed. Please try again.');
         }
-        */
-
-        //mock login for now
-        console.log('Running mock authentication for testing...');
     };
 
     const fullscreenContainer: React.CSSProperties = {

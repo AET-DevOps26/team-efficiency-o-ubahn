@@ -7,7 +7,6 @@ interface RegisterProps {
 }
 
 function Register({ onRegisterSuccess, onToggleView }: RegisterProps) {
-    const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -20,37 +19,23 @@ function Register({ onRegisterSuccess, onToggleView }: RegisterProps) {
             return;
         }
 
-        console.log('Saving mock registration to localStorage...', { username, email });
-        localStorage.setItem('mock_registered_email', email);
-        localStorage.setItem('mock_registered_password', password);
-        localStorage.setItem('mock_registered_username', username);
-
-        /*
         try {
-          const response = await fetch('http://localhost:8081/api/auth/register', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ username, email, password }),
-          });
+            const response = await fetch('http://localhost:8081/api/auth/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password }),
+            });
 
-          if (!response.ok) {
-            throw new Error('Registration failed');
-          }
+            if (!response.ok) {
+                const text = await response.text();
+                throw new Error(text || 'Registration failed');
+            }
 
-          alert('Registration successful! Redirecting to login...');
-          onRegisterSuccess();
-          return;
+            alert('Registration successful! Please log in.');
+            onRegisterSuccess();
         } catch (error: any) {
-          console.error('Production registration failed:', error);
-          alert(error.message || 'Server error connection failed.');
-          return;
+            alert(error.message || 'Registration failed. Please try again.');
         }
-        */
-
-        alert('Mock Registration Successful! Account Created.');
-        onRegisterSuccess();
     };
 
     const fullscreenContainer: React.CSSProperties = {
@@ -86,18 +71,6 @@ function Register({ onRegisterSuccess, onToggleView }: RegisterProps) {
             <div style={registerCard}>
                 <h2 style={{ marginTop: 0 }}>FridgeAI Register</h2>
                 <form onSubmit={handleSubmit}>
-
-                    <div style={{ marginBottom: '15px' }}>
-                        <label style={{ display: 'block', marginBottom: '5px' }}>Username:</label>
-                        <input
-                            type="text"
-                            value={username}
-                            onChange={(e) => setUsername(e.target.value)}
-                            placeholder="mared_prime"
-                            required
-                            style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
-                        />
-                    </div>
 
                     <div style={{ marginBottom: '15px' }}>
                         <label style={{ display: 'block', marginBottom: '5px' }}>Email Address:</label>
