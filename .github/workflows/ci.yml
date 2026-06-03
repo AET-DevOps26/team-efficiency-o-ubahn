@@ -6,7 +6,7 @@ on:
   pull_request:
 
 jobs:
-  backend:
+  Server:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -20,7 +20,7 @@ jobs:
           java-version: '21'
       - uses: gradle/actions/setup-gradle@v4
       - name: Build ${{ matrix.service }}
-        working-directory: backend
+        working-directory: Server
         run: |
           chmod +x gradlew
           ./gradlew :${{ matrix.service }}:bootJar --no-daemon

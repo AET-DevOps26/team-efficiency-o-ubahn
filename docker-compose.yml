@@ -21,7 +21,7 @@ services:
 
   user-service:
     build:
-      context: ./backend
+      context: ./Server
       dockerfile: user-service/Dockerfile
     container_name: fridgeai-user-service
     restart: unless-stopped
@@ -37,7 +37,7 @@ services:
 
   inventory-service:
     build:
-      context: ./backend
+      context: ./Server
       dockerfile: inventory-service/Dockerfile
     container_name: fridgeai-inventory-service
     restart: unless-stopped
@@ -53,7 +53,7 @@ services:
 
   recipe-service:
     build:
-      context: ./backend
+      context: ./Server
       dockerfile: recipe-service/Dockerfile
     container_name: fridgeai-recipe-service
     restart: unless-stopped
