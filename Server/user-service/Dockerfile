@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.6
 
-# Build stage — runs from the backend/ build context so the Gradle multi-module
+# Build stage — runs from the Server/ build context so the Gradle multi-module
 # build can resolve settings.gradle and the wrapper.
 FROM eclipse-temurin:21-jdk-alpine AS build
 WORKDIR /workspace
