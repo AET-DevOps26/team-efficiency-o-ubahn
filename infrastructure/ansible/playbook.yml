@@ -12,6 +12,15 @@
     github_actor: "{{ lookup('env', 'GITHUB_ACTOR') }}"
 
   tasks:
+    - name: Validate required environment variables are set
+      ansible.builtin.assert:
+        that:
+          - jwt_secret | length > 0
+          - postgres_password | length > 0
+          - github_token | length > 0
+          - github_actor | length > 0
+        fail_msg: "Missing required env vars: JWT_SECRET, POSTGRES_PASSWORD, GITHUB_TOKEN, GITHUB_ACTOR"
+
     - name: Install prerequisites
       ansible.builtin.apt:
         name:

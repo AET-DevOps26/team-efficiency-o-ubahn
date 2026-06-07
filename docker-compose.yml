@@ -21,9 +21,6 @@ services:
 
   user-service:
     image: ghcr.io/aet-devops26/team-efficiency-o-ubahn/user-service:${IMAGE_TAG:-latest}
-    build:
-      context: ./Server
-      dockerfile: user-service/Dockerfile
     container_name: fridgeai-user-service
     restart: unless-stopped
     environment:
@@ -37,9 +34,6 @@ services:
 
   inventory-service:
     image: ghcr.io/aet-devops26/team-efficiency-o-ubahn/inventory-service:${IMAGE_TAG:-latest}
-    build:
-      context: ./Server
-      dockerfile: inventory-service/Dockerfile
     container_name: fridgeai-inventory-service
     restart: unless-stopped
     environment:
@@ -53,9 +47,6 @@ services:
 
   recipe-service:
     image: ghcr.io/aet-devops26/team-efficiency-o-ubahn/recipe-service:${IMAGE_TAG:-latest}
-    build:
-      context: ./Server
-      dockerfile: recipe-service/Dockerfile
     container_name: fridgeai-recipe-service
     restart: unless-stopped
     environment:
@@ -71,9 +62,6 @@ services:
 
   client:
     image: ghcr.io/aet-devops26/team-efficiency-o-ubahn/client:${IMAGE_TAG:-latest}
-    build:
-      context: ./Client
-      dockerfile: Dockerfile
     container_name: fridgeai-client
     restart: unless-stopped
     ports:
