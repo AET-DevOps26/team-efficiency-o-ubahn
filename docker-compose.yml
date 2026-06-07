@@ -6,7 +6,7 @@ services:
     environment:
       POSTGRES_DB: fridgeai
       POSTGRES_USER: fridgeai
-      POSTGRES_PASSWORD: fridgeai
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fridgeai}
     ports:
       - "5432:5432"
     volumes:
@@ -20,61 +20,64 @@ services:
       start_period: 30s
 
   user-service:
+    image: ghcr.io/aet-devops26/team-efficiency-o-ubahn/user-service:${IMAGE_TAG:-latest}
     build:
       context: ./Server
       dockerfile: user-service/Dockerfile
     container_name: fridgeai-user-service
     restart: unless-stopped
-    ports:
-      - "8081:8081"
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/fridgeai
       SPRING_DATASOURCE_USERNAME: fridgeai
-      SPRING_DATASOURCE_PASSWORD: fridgeai
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-fridgeai}
+      JWT_SECRET: ${JWT_SECRET:-devSecretKeyForFridgeAIApplicationMin32Ch}
     depends_on:
       postgres:
         condition: service_healthy
 
   inventory-service:
+    image: ghcr.io/aet-devops26/team-efficiency-o-ubahn/inventory-service:${IMAGE_TAG:-latest}
     build:
       context: ./Server
       dockerfile: inventory-service/Dockerfile
     container_name: fridgeai-inventory-service
     restart: unless-stopped
-    ports:
-      - "8082:8082"
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/fridgeai
       SPRING_DATASOURCE_USERNAME: fridgeai
-      SPRING_DATASOURCE_PASSWORD: fridgeai
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-fridgeai}
+      JWT_SECRET: ${JWT_SECRET:-devSecretKeyForFridgeAIApplicationMin32Ch}
     depends_on:
       postgres:
         condition: service_healthy
 
   recipe-service:
+    image: ghcr.io/aet-devops26/team-efficiency-o-ubahn/recipe-service:${IMAGE_TAG:-latest}
     build:
       context: ./Server
       dockerfile: recipe-service/Dockerfile
     container_name: fridgeai-recipe-service
     restart: unless-stopped
-    ports:
-      - "8083:8083"
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/fridgeai
       SPRING_DATASOURCE_USERNAME: fridgeai
-      SPRING_DATASOURCE_PASSWORD: fridgeai
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-fridgeai}
+      JWT_SECRET: ${JWT_SECRET:-devSecretKeyForFridgeAIApplicationMin32Ch}
+      INVENTORY_SERVICE_URL: http://inventory-service:8082
+      USER_SERVICE_URL: http://user-service:8081
     depends_on:
       postgres:
         condition: service_healthy
 
   client:
+    image: ghcr.io/aet-devops26/team-efficiency-o-ubahn/client:${IMAGE_TAG:-latest}
     build:
       context: ./Client
       dockerfile: Dockerfile
     container_name: fridgeai-client
     restart: unless-stopped
     ports:
-      - "5173:80"
+      - "80:80"
     depends_on:
       - user-service
       - inventory-service
