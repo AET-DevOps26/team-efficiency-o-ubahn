@@ -80,7 +80,7 @@ jobs:
       - name: Set up SSH key
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.AZURE_PRIVATE_KEY }}" > ~/.ssh/azure-vm.pem
+          echo "${{ secrets.AZURE_PRIVATE_KEY }}" | tr -d '\r' > ~/.ssh/azure-vm.pem
           chmod 600 ~/.ssh/azure-vm.pem
 
       - name: Install Ansible
