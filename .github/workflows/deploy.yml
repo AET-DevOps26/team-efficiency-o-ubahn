@@ -78,10 +78,13 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Set up SSH key
+        env:
+          AZURE_PRIVATE_KEY: ${{ secrets.AZURE_PRIVATE_KEY }}
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.AZURE_PRIVATE_KEY }}" | tr -d '\r' > ~/.ssh/azure-vm.pem
+          printf '%s\n' "$AZURE_PRIVATE_KEY" | perl -pe 's/\\n/\n/g' | tr -d '\r' > ~/.ssh/azure-vm.pem
           chmod 600 ~/.ssh/azure-vm.pem
+          ssh-keygen -y -f ~/.ssh/azure-vm.pem > /dev/null
 
       - name: Install Ansible
         run: pip install ansible
