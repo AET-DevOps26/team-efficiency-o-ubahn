@@ -1,0 +1,108 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_BASE: ghcr.io/aet-devops26/team-efficiency-o-ubahn
+
+jobs:
+  build-and-push:
+    name: Build & Push Docker Images
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image_tag: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push user-service
+        uses: docker/build-push-action@v6
+        with:
+          context: Server
+          file: Server/user-service/Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE_BASE }}/user-service:${{ github.sha }}
+            ${{ env.IMAGE_BASE }}/user-service:latest
+
+      - name: Build and push inventory-service
+        uses: docker/build-push-action@v6
+        with:
+          context: Server
+          file: Server/inventory-service/Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE_BASE }}/inventory-service:${{ github.sha }}
+            ${{ env.IMAGE_BASE }}/inventory-service:latest
+
+      - name: Build and push recipe-service
+        uses: docker/build-push-action@v6
+        with:
+          context: Server
+          file: Server/recipe-service/Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE_BASE }}/recipe-service:${{ github.sha }}
+            ${{ env.IMAGE_BASE }}/recipe-service:latest
+
+      - name: Build and push client
+        uses: docker/build-push-action@v6
+        with:
+          context: Client
+          push: true
+          tags: |
+            ${{ env.IMAGE_BASE }}/client:${{ github.sha }}
+            ${{ env.IMAGE_BASE }}/client:latest
+
+  deploy:
+    name: Deploy to Azure VM
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.AZURE_PRIVATE_KEY }}" > ~/.ssh/azure-vm.pem
+          chmod 600 ~/.ssh/azure-vm.pem
+
+      - name: Install Ansible
+        run: pip install ansible
+
+      - name: Write Ansible inventory
+        run: |
+          cat > infrastructure/ansible/inventory.ini << EOF
+          [vm]
+          ${{ vars.AZURE_PUBLIC_IP }} ansible_user=azureuser ansible_ssh_private_key_file=~/.ssh/azure-vm.pem ansible_ssh_common_args='-o StrictHostKeyChecking=no'
+          EOF
+          sed -i 's/^[[:space:]]*//' infrastructure/ansible/inventory.ini
+
+      - name: Run Ansible playbook
+        run: |
+          ansible-playbook \
+            -i infrastructure/ansible/inventory.ini \
+            infrastructure/ansible/playbook.yml
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_ACTOR: ${{ github.actor }}
+          ANSIBLE_HOST_KEY_CHECKING: "False"
