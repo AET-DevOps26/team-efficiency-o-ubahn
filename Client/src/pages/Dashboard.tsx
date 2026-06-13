@@ -1,14 +1,13 @@
-import { useState/*, useEffect*/ } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
-// 1. Database-aligned TypeScript contracts
 type UnitType = 'GRAM' | 'KILOGRAM' | 'MILLILITRE' | 'LITRE' | 'PIECE' | 'SLICE' | 'CLOVE' | 'TEASPOON' | 'TABLESPOON' | 'CUP';
 
 interface Ingredient {
-    id: string;
+    id: number;
     name: string;
     quantity: number;
     unit: UnitType;
-    expiryDate: string; // ISO String format YYYY-MM-DD
+    expiryDate: string;
 }
 
 interface Recipe {
@@ -19,48 +18,44 @@ interface Recipe {
 }
 
 function Dashboard() {
-    // Mock data utilizing the official back-end field architecture
-    const jwtToken = localStorage.getItem('fridgeai_token') || 'MOCK_DEVELOPMENT_TOKEN';
-    const [ingredients, setIngredients] = useState<Ingredient[]>([
-        { id: '1', name: 'Chicken Breast', quantity: 500, unit: 'GRAM', expiryDate: '2026-05-24' },
-        { id: '2', name: 'Whole Milk', quantity: 1, unit: 'LITRE', expiryDate: '2026-05-26' },
-        { id: '3', name: 'Eggs', quantity: 6, unit: 'PIECE', expiryDate: '2026-04-23'},
-        { id: '4', name: 'Spinach', quantity: 200, unit: 'GRAM', expiryDate: '2026-05-22'},
-    ]);
+    const jwtToken = localStorage.getItem('fridgeai_token');
+    const [ingredients, setIngredients] = useState<Ingredient[]>([]);
+    const [loadError, setLoadError] = useState<string | null>(null);
+
+    const authHeaders = useCallback((): HeadersInit => ({
+        'Content-Type': 'application/json',
+        ...(jwtToken ? { Authorization: `Bearer ${jwtToken}` } : {}),
+    }), [jwtToken]);
 
     const [aiRecipes] = useState<Recipe[]>([
         { id: '101', title: 'Creamy Garlic Chicken Spinach', matchPercentage: 100, missedIngredients: [] },
         { id: '102', title: 'Classic Omelette', matchPercentage: 75, missedIngredients: ['Butter'] },
     ]);
 
-    // Modal State Controls
     const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
     const [newName, setNewName] = useState('');
     const [newQuantity, setNewQuantity] = useState<number>(1);
     const [newUnit, setNewUnit] = useState<UnitType>('PIECE');
     const [newExpiry, setNewExpiry] = useState('');
 
-    // TODO: Link this lifecycle block once 'Inventory Service' endpoint is active.
-    // ==========================================
-    /*
     useEffect(() => {
         const fetchUserInventory = async () => {
             try {
-                const response = await axios.get('http://localhost:8082/api/inventory', {
-                    headers: { Authorization: `Bearer ${jwtToken}` }
-                });
-                if (response.status === 200) {
-                    setIngredients(response.data);
+                const response = await fetch('/api/inventory', { headers: authHeaders() });
+                if (!response.ok) {
+                    throw new Error(`Inventory Service responded ${response.status}`);
                 }
+                const data: Ingredient[] = await response.json();
+                setIngredients(data);
+                setLoadError(null);
             } catch (error) {
-                console.error("Failed fetching database inventory:", error);
+                console.error('Failed fetching database inventory:', error);
+                setLoadError('Could not load your inventory. Is the Inventory Service running?');
             }
         };
         fetchUserInventory();
-    }, [jwtToken]);
-    */
+    }, [authHeaders]);
 
-    // Business Logic: Dynamic Expiration Countdown Processor
     const calculateDaysLeft = (expiryDateStr: string): number => {
         const expiryTarget = new Date(expiryDateStr).getTime();
         const todayMidnight = new Date().setHours(0, 0, 0, 0);
@@ -75,52 +70,58 @@ function Dashboard() {
         window.location.reload();
     };
 
-    const handleAddNewItem = (e: React.FormEvent) => {
+    const handleAddNewItem = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!newName || !newExpiry || newQuantity <= 0) return alert('Please enter valid structural details!');
 
-        const newItem: Ingredient = {
-            id: Date.now().toString(),
+        const ingredientPayload = {
             name: newName,
             quantity: newQuantity,
             unit: newUnit,
-            expiryDate: newExpiry
-        };
-
-        setIngredients([...ingredients, newItem]);
-
-        // Reset Form Fields
-        setNewName('');
-        setNewQuantity(1);
-        setNewUnit('PIECE');
-        setNewExpiry('');
-        setIsModalOpen(false);
-
-        // TODO: Uncomment this block once the Spring Boot REST API is live.
-        /*
-        const ingredientPayload = {
-          name: newName,
-          quantity: newQuantity,
-          unit: newUnit,
-          expiryDate: newExpiry
+            expiryDate: newExpiry, // YYYY-MM-DD — maps to the backend LocalDate
         };
 
         try {
-          // Send the request containing the User JWT token for secure validation
-          const response = await axios.post('http://localhost:8082/api/inventory', ingredientPayload, {
-            headers: { Authorization: `Bearer ${jwtToken}` }
-          });
+            const response = await fetch('/api/inventory/items', {
+                method: 'POST',
+                headers: authHeaders(),
+                body: JSON.stringify(ingredientPayload),
+            });
 
-          if (response.status === 201) {
-            // Append the actual database-confirmed ingredient containing the true PostgreSQL Long ID
-            setIngredients([...ingredients, response.data]);
+            if (!response.ok) {
+                throw new Error(`Inventory Service responded ${response.status}`);
+            }
+
+            const savedItem: Ingredient = await response.json();
+            setIngredients(prev => [...prev, savedItem]);
+
+            setNewName('');
+            setNewQuantity(1);
+            setNewUnit('PIECE');
+            setNewExpiry('');
             setIsModalOpen(false);
-          }
         } catch (error) {
-          console.error("Failed syncing with Inventory Service:", error);
-          alert("Inventory Service offline. Rollback initiated.");
+            console.error('Failed syncing with Inventory Service:', error);
+            alert('Could not add item — Inventory Service unreachable. Please try again.');
         }
-        */
+    };
+
+    const handleDeleteItem = async (id: number) => {
+        try {
+            const response = await fetch(`/api/inventory/items/${id}`, {
+                method: 'DELETE',
+                headers: authHeaders(),
+            });
+
+            if (!response.ok) {
+                throw new Error(`Inventory Service responded ${response.status}`);
+            }
+
+            setIngredients(prev => prev.filter(item => item.id !== id));
+        } catch (error) {
+            console.error('Failed deleting ingredient:', error);
+            alert('Could not remove item — Inventory Service unreachable. Please try again.');
+        }
     };
 
     // --- STYLING PATTERNS ---
@@ -142,7 +143,7 @@ function Dashboard() {
         justifyContent: 'space-between',
         alignItems: 'center',
         padding: '15px 30px',
-        backgroundColor: '#0065BD', // TUM Blue Branding Base
+        backgroundColor: '#0065BD',
         color: 'white',
         boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
     };
@@ -216,14 +217,27 @@ function Dashboard() {
                         </button>
                     </div>
 
+                    {loadError && (
+                        <p style={{ marginTop: '15px', color: '#e74c3c', fontSize: '14px' }}>{loadError}</p>
+                    )}
+
+                    {!loadError && ingredients.length === 0 && (
+                        <p style={{ marginTop: '15px', color: '#7f8c8d', fontSize: '14px' }}>
+                            Your fridge is empty. Click <strong>+ Add Item</strong> to start tracking ingredients.
+                        </p>
+                    )}
+
                     <div style={itemGrid}>
                         {ingredients.map(item => {
                             const daysLeft = calculateDaysLeft(item.expiryDate);
                             const isUrgent = daysLeft <= 2;
 
                             return (
-                                <div key={item.id} style={{ padding: '18px', borderRadius: '8px', border: `1px solid ${isUrgent ? '#e74c3c' : '#e0e0e0'}`, backgroundColor: isUrgent ? '#fdf2f2' : '#fafafa', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
-                                    <h4 style={{ margin: '0 0 10px 0', color: '#2c3e50', fontSize: '16px' }}>{item.name}</h4>
+                                <div key={item.id} style={{ position: 'relative', padding: '18px', borderRadius: '8px', border: `1px solid ${isUrgent ? '#e74c3c' : '#e0e0e0'}`, backgroundColor: isUrgent ? '#fdf2f2' : '#fafafa', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+                                    <button onClick={() => handleDeleteItem(item.id)} title="Remove item" style={{ position: 'absolute', top: '10px', right: '10px', width: '24px', height: '24px', lineHeight: '1', padding: 0, backgroundColor: 'transparent', color: '#95a5a6', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '18px', fontWeight: 'bold' }}>
+                                        ×
+                                    </button>
+                                    <h4 style={{ margin: '0 0 10px 0', paddingRight: '20px', color: '#2c3e50', fontSize: '16px' }}>{item.name}</h4>
                                     <p style={{ margin: '0 0 6px 0', fontSize: '14px', color: '#7f8c8d' }}>
                                         Amount: <strong>{item.quantity}</strong> <span style={{ fontSize: '12px', color: '#95a5a6' }}>{item.unit}</span>
                                     </p>

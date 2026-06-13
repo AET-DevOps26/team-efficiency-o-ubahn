@@ -1,0 +1,31 @@
+# Local-only overrides. Docker Compose auto-merges this on top of docker-compose.yml
+# when you run `docker compose` from this directory.
+#
+# It is NOT used in production: the Ansible deploy playbook copies only
+# docker-compose.yml to the Azure VM, so this file never ships.
+#
+# Purpose: build the client (and backend services) from local source instead of
+# pulling the pre-built :latest images from GHCR, so local code changes show up.
+services:
+  client:
+    build:
+      context: ./Client
+    image: ghcr.io/aet-devops26/team-efficiency-o-ubahn/client:latest
+
+  user-service:
+    build:
+      context: ./Server
+      dockerfile: user-service/Dockerfile
+    image: ghcr.io/aet-devops26/team-efficiency-o-ubahn/user-service:latest
+
+  inventory-service:
+    build:
+      context: ./Server
+      dockerfile: inventory-service/Dockerfile
+    image: ghcr.io/aet-devops26/team-efficiency-o-ubahn/inventory-service:latest
+
+  recipe-service:
+    build:
+      context: ./Server
+      dockerfile: recipe-service/Dockerfile
+    image: ghcr.io/aet-devops26/team-efficiency-o-ubahn/recipe-service:latest
