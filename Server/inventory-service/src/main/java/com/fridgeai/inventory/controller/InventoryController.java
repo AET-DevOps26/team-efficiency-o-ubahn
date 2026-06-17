@@ -19,7 +19,7 @@ public class InventoryController {
         this.inventoryService = inventoryService;
     }
 
-    @GetMapping
+    @GetMapping({"", "/"})
     public ResponseEntity<List<Ingredient>> getInventory(Principal principal) {
         return ResponseEntity.ok(inventoryService.getIngredients(principal.getName()));
     }

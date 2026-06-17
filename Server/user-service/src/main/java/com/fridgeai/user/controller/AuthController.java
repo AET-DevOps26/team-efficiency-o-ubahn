@@ -3,6 +3,7 @@ package com.fridgeai.user.controller;
 import com.fridgeai.user.dto.AuthResponse;
 import com.fridgeai.user.dto.LoginRequest;
 import com.fridgeai.user.dto.RegisterRequest;
+import com.fridgeai.user.model.Preference;
 import com.fridgeai.user.model.User;
 import com.fridgeai.user.repository.UserRepository;
 import com.fridgeai.user.util.JwtUtil;
@@ -32,6 +33,11 @@ public class AuthController {
         User user = new User();
         user.setEmail(request.email());
         user.setPasswordHash(passwordEncoder.encode(request.password()));
+        Preference preference = new Preference();
+        preference.setAllergies(request.allergies());
+        preference.setDietFocus(request.preference());
+        preference.setUser(user);
+        user.setPreference(preference);
         userRepository.save(user);
         return ResponseEntity.ok(new AuthResponse(jwtUtil.generateToken(request.email())));
     }
