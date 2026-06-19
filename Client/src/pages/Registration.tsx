@@ -10,6 +10,8 @@ function Register({ onRegisterSuccess, onToggleView }: RegisterProps) {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
+    const [allergiesInput, setAllergiesInput] = useState('');
+    const [preferencesInput, setPreferencesInput] = useState('');
 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -19,11 +21,18 @@ function Register({ onRegisterSuccess, onToggleView }: RegisterProps) {
             return;
         }
 
+        const allergiesArray = allergiesInput
+            .split(/[ ,]+/)
+            .map(item => item.trim().toUpperCase())
+            .filter(item => item.length > 0);
+
+        const singlePreference = preferencesInput.trim().toUpperCase() || null;
+
         try {
             const response = await fetch('/api/auth/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password }),
+                body: JSON.stringify({ email, password, allergies: allergiesArray, preference: singlePreference}),
             });
 
             if (!response.ok) {
@@ -73,42 +82,65 @@ function Register({ onRegisterSuccess, onToggleView }: RegisterProps) {
                 <form onSubmit={handleSubmit}>
 
                     <div style={{ marginBottom: '15px' }}>
-                        <label style={{ display: 'block', marginBottom: '5px' }}>Email Address:</label>
+                        <label style={{ display: 'block', marginBottom: '5px', textAlign: 'center' }}>Email Address:</label>
                         <input
                             type="email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             placeholder="mared@tum.de"
                             required
-                            style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
+                            style={{ width: '100%', padding: '8px', boxSizing: 'border-box', textAlign: 'center' }}
                         />
                     </div>
 
                     <div style={{ marginBottom: '15px' }}>
-                        <label style={{ display: 'block', marginBottom: '5px' }}>Password:</label>
+                        <label style={{ display: 'block', marginBottom: '5px', textAlign: 'center' }}>Password:</label>
                         <input
                             type="password"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             placeholder="••••••••"
                             required
-                            style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
+                            style={{ width: '100%', padding: '8px', boxSizing: 'border-box', textAlign: 'center' }}
                         />
                     </div>
 
-                    <div style={{ marginBottom: '20px' }}>
-                        <label style={{ display: 'block', marginBottom: '5px' }}>Confirm Password:</label>
+                    <div style={{ marginBottom: '15px' }}>
+                        <label style={{ display: 'block', marginBottom: '5px', textAlign: 'center' }}>Confirm Password:</label>
                         <input
                             type="password"
                             value={confirmPassword}
                             onChange={(e) => setConfirmPassword(e.target.value)}
                             placeholder="••••••••"
                             required
-                            style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
+                            style={{ width: '100%', padding: '8px', boxSizing: 'border-box', textAlign: 'center' }}
                         />
                     </div>
 
-                    <button type="submit" style={{ width: '100%', padding: '10px', backgroundColor: '#0065BD', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+                    {/* Cleaned Up Allergies Section */}
+                    <div style={{ marginBottom: '15px' }}>
+                        <label style={{ display: 'block', marginBottom: '5px', textAlign: 'center' }}>Allergies:</label>
+                        <input
+                            type="text"
+                            value={allergiesInput}
+                            onChange={(e) => setAllergiesInput(e.target.value)}
+                            placeholder="Nuts, Dairy (separated by spaces or commas)"
+                            style={{ width: '100%', padding: '8px', boxSizing: 'border-box', textAlign: 'center' }}
+                        />
+                    </div>
+
+                    <div style={{ marginBottom: '20px' }}>
+                        <label style={{ display: 'block', marginBottom: '5px', textAlign: 'center' }}>Dietary Preference:</label>
+                        <input
+                            type="text"
+                            value={preferencesInput}
+                            onChange={(e) => setPreferencesInput(e.target.value)}
+                            placeholder="e.g. Vegan, Keto, Halal"
+                            style={{ width: '100%', padding: '8px', boxSizing: 'border-box', textAlign: 'center' }}
+                        />
+                    </div>
+
+                    <button type="submit" style={{ width: '100%', padding: '10px', backgroundColor: '#0065BD', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>
                         Sign Up
                     </button>
                 </form>

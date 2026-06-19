@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import backgroundImageFile from '../assets/Salt Ramsay.png';
 
 type UnitType = 'GRAM' | 'KILOGRAM' | 'MILLILITRE' | 'LITRE' | 'PIECE' | 'SLICE' | 'CLOVE' | 'TEASPOON' | 'TABLESPOON' | 'CUP';
 
@@ -131,11 +132,20 @@ function Dashboard() {
         left: 0,
         right: 0,
         minHeight: '100vh',
+        width: '100%',
         display: 'flex',
         flexDirection: 'column',
-        backgroundColor: '#f4f6f8',
+        alignItems: 'center',
+
+        backgroundImage: `url(${backgroundImageFile})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center center',
+        backgroundRepeat: 'no-repeat',
+        backgroundAttachment: 'fixed',
+
         fontFamily: 'Arial, sans-serif',
-        boxSizing: 'border-box'
+        boxSizing: 'border-box',
+        backgroundColor: '#0c0c0e',
     };
 
     const navBar: React.CSSProperties = {
@@ -143,25 +153,34 @@ function Dashboard() {
         justifyContent: 'space-between',
         alignItems: 'center',
         padding: '15px 30px',
-        backgroundColor: '#0065BD',
+        backgroundColor: '#111625',
         color: 'white',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-    };
+        boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+        width: '100%', // Makes navbar span the entire top screen width
+        boxSizing: 'border-box'
+};
 
     const mainContent: React.CSSProperties = {
         display: 'grid',
         gridTemplateColumns: '2.5fr 1fr',
         gap: '25px',
         padding: '30px',
-        boxSizing: 'border-box'
+        boxSizing: 'border-box',
+        width: '100%',
+        maxWidth: '1200px',
+        margin: '0 auto',
+        flexGrow: 1
     };
 
     const panelCard: React.CSSProperties = {
-        backgroundColor: 'white',
+        backgroundColor: 'rgba(25, 25, 30, 0.85)',
+        backdropFilter: 'blur(10px)',
         borderRadius: '10px',
         padding: '24px',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-        boxSizing: 'border-box'
+        boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+        boxSizing: 'border-box',
+        border: '1px solid rgba(255, 255, 255, 0.08)',
+        color: '#ffffff'
     };
 
     const itemGrid: React.CSSProperties = {
@@ -211,7 +230,7 @@ function Dashboard() {
                 {/* Left Grid: Active Ingredient Management */}
                 <section style={panelCard}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #f4f6f8', paddingBottom: '15px' }}>
-                        <h3 style={{ margin: 0, color: '#2c3e50', fontSize: '20px' }}>My Virtual Fridge Inventory</h3>
+                        <h3 style={{ margin: 0, color: '#ffffff', fontSize: '20px' }}>My Virtual Fridge Inventory</h3>
                         <button onClick={() => setIsModalOpen(true)} style={{ padding: '10px 18px', backgroundColor: '#2ecc71', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px', boxShadow: '0 2px 5px rgba(46,204,113,0.3)' }}>
                             + Add Item
                         </button>
@@ -222,7 +241,7 @@ function Dashboard() {
                     )}
 
                     {!loadError && ingredients.length === 0 && (
-                        <p style={{ marginTop: '15px', color: '#7f8c8d', fontSize: '14px' }}>
+                        <p style={{ marginTop: '15px', color: '#b3b3b3', fontSize: '14px' }}>
                             Your fridge is empty. Click <strong>+ Add Item</strong> to start tracking ingredients.
                         </p>
                     )}
@@ -233,11 +252,11 @@ function Dashboard() {
                             const isUrgent = daysLeft <= 2;
 
                             return (
-                                <div key={item.id} style={{ position: 'relative', padding: '18px', borderRadius: '8px', border: `1px solid ${isUrgent ? '#e74c3c' : '#e0e0e0'}`, backgroundColor: isUrgent ? '#fdf2f2' : '#fafafa', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+                                <div key={item.id} style={{ position: 'relative', padding: '18px', borderRadius: '8px', border: `1px solid ${isUrgent ? '#e74c3c' : 'rgba(255,255,255,0.1)'}`, backgroundColor: isUrgent ? 'rgba(231, 76, 60, 0.15)' : 'rgba(255,255,255,0.03)', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>
                                     <button onClick={() => handleDeleteItem(item.id)} title="Remove item" style={{ position: 'absolute', top: '10px', right: '10px', width: '24px', height: '24px', lineHeight: '1', padding: 0, backgroundColor: 'transparent', color: '#95a5a6', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '18px', fontWeight: 'bold' }}>
                                         ×
                                     </button>
-                                    <h4 style={{ margin: '0 0 10px 0', paddingRight: '20px', color: '#2c3e50', fontSize: '16px' }}>{item.name}</h4>
+                                    <h4 style={{ margin: '0 0 10px 0', paddingRight: '20px', color: '#ffffff', fontSize: '16px' }}>{item.name}</h4>
                                     <p style={{ margin: '0 0 6px 0', fontSize: '14px', color: '#7f8c8d' }}>
                                         Amount: <strong>{item.quantity}</strong> <span style={{ fontSize: '12px', color: '#95a5a6' }}>{item.unit}</span>
                                     </p>
@@ -252,7 +271,7 @@ function Dashboard() {
 
                 {/* Right Tab: AI Output Tracking Panel */}
                 <aside style={panelCard}>
-                    <h3 style={{ margin: '0 0 15px 0', color: '#2c3e50', fontSize: '20px' }}>AI Recipe Genius</h3>
+                    <h3 style={{ margin: '0 0 15px 0', color: '#ffffff', fontSize: '20px' }}>AI Recipe Genius</h3>
                     <button
                         //onClick={handleGenerateRecipes}
                         style={{ width: '100%', padding: '12px', backgroundColor: '#9b59b6', color: 'white', border: 'none', borderRadius: '6px', fontSize: '15px', fontWeight: 'bold', cursor: 'pointer', marginBottom: '20px', boxShadow: '0 2px 5px rgba(155,89,182,0.3)' }}>
@@ -261,8 +280,8 @@ function Dashboard() {
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                         {aiRecipes.map(recipe => (
-                            <div key={recipe.id} style={{ padding: '14px', border: '1px solid #e0e0e0', borderRadius: '6px', backgroundColor: '#fff' }}>
-                                <h5 style={{ margin: '0 0 6px 0', fontSize: '14px', color: '#34495e' }}>{recipe.title}</h5>
+                            <div key={recipe.id} style={{ padding: '14px', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', backgroundColor: 'rgba(255,255,255,0.05)' }}>
+                                <h5 style={{ margin: '0 0 6px 0', fontSize: '14px', color: '#ffffff' }}>{recipe.title}</h5>
                                 <div style={{ fontSize: '12px', color: '#27ae60', fontWeight: 'bold' }}>
                                     Match Rating: {recipe.matchPercentage}%
                                 </div>
