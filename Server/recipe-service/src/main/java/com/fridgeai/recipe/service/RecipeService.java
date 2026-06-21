@@ -1,5 +1,7 @@
 package com.fridgeai.recipe.service;
 
+import com.fridgeai.recipe.dto.GenAiGenerateRequest;
+import com.fridgeai.recipe.dto.GenAiIngredient;
 import com.fridgeai.recipe.dto.IngredientDto;
 import com.fridgeai.recipe.dto.PreferenceDto;
 import com.fridgeai.recipe.dto.RecipeRequest;
@@ -13,6 +15,7 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -30,6 +33,9 @@ public class RecipeService {
 
     @Value("${user.service.url}")
     private String userServiceUrl;
+
+    @Value("${genai.service.url}")
+    private String genaiServiceUrl;
 
     public RecipeService(RecipeRepository recipeRepository, FavouriteRepository favouriteRepository, RestTemplate restTemplate) {
         this.recipeRepository = recipeRepository;
@@ -90,8 +96,42 @@ public class RecipeService {
                 PreferenceDto.class
         );
 
-        // TODO: call AI service with ingredients and preferences to generate recipe
-        throw new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED, "AI integration pending");
+        GenAiGenerateRequest aiRequest = new GenAiGenerateRequest();
+        aiRequest.setIngredients(toGenAiIngredients(ingredients));
+        aiRequest.setPreferences(preferences != null ? preferences : new PreferenceDto());
+
+        RecipeRequest generated;
+        try {
+            generated = restTemplate.postForObject(
+                    genaiServiceUrl + "/api/genai/generate-recipe",
+                    aiRequest,
+                    RecipeRequest.class
+            );
+        } catch (RestClientException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
+                    "Recipe generation failed: " + ex.getMessage());
+        }
+
+        if (generated == null || generated.getTitle() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
+                    "Recipe generation returned no usable result");
+        }
+
+        return createRecipe(generated);
+    }
+
+    private List<GenAiIngredient> toGenAiIngredients(List<IngredientDto> ingredients) {
+        if (ingredients == null) {
+            return List.of();
+        }
+        return ingredients.stream().map(i -> {
+            GenAiIngredient g = new GenAiIngredient();
+            g.setName(i.getName());
+            g.setQuantity(i.getQuantity());
+            g.setUnit(i.getUnit());
+            g.setExpiryDate(i.getExpiryDate() != null ? i.getExpiryDate().toString() : null);
+            return g;
+        }).toList();
     }
 
     public void removeFavourite(String userEmail, Long recipeId) {
