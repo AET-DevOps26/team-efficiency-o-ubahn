@@ -10,6 +10,7 @@
     postgres_password: "{{ lookup('env', 'POSTGRES_PASSWORD') }}"
     github_token: "{{ lookup('env', 'GITHUB_TOKEN') }}"
     github_actor: "{{ lookup('env', 'GITHUB_ACTOR') }}"
+    logos_api_key: "{{ lookup('env', 'LOGOS_API_KEY') }}"
 
   tasks:
     - name: Validate required environment variables are set
@@ -19,7 +20,8 @@
           - postgres_password | length > 0
           - github_token | length > 0
           - github_actor | length > 0
-        fail_msg: "Missing required env vars: JWT_SECRET, POSTGRES_PASSWORD, GITHUB_TOKEN, GITHUB_ACTOR"
+          - logos_api_key | length > 0
+        fail_msg: "Missing required env vars: JWT_SECRET, POSTGRES_PASSWORD, GITHUB_TOKEN, GITHUB_ACTOR, LOGOS_API_KEY"
 
     - name: Install prerequisites
       ansible.builtin.apt:
@@ -115,6 +117,7 @@
           IMAGE_TAG={{ image_tag }}
           JWT_SECRET={{ jwt_secret }}
           POSTGRES_PASSWORD={{ postgres_password }}
+          LOGOS_API_KEY={{ logos_api_key }}
       no_log: true
 
     - name: Login to GitHub Container Registry

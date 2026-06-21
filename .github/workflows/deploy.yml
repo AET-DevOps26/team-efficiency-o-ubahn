@@ -66,6 +66,15 @@ jobs:
             ${{ env.IMAGE_BASE }}/client:${{ github.sha }}
             ${{ env.IMAGE_BASE }}/client:latest
 
+      - name: Build and push genai-service
+        uses: docker/build-push-action@v6
+        with:
+          context: GenAI-Service
+          push: true
+          tags: |
+            ${{ env.IMAGE_BASE }}/genai-service:${{ github.sha }}
+            ${{ env.IMAGE_BASE }}/genai-service:latest
+
   deploy:
     name: Deploy to Azure VM
     needs: build-and-push
@@ -103,6 +112,7 @@ jobs:
           IMAGE_TAG: ${{ github.sha }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          LOGOS_API_KEY: ${{ secrets.LOGOS_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
           ANSIBLE_HOST_KEY_CHECKING: "False"

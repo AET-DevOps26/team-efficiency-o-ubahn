@@ -58,9 +58,28 @@ services:
       JWT_SECRET: ${JWT_SECRET:-devSecretKeyForFridgeAIApplicationMin32Ch}
       INVENTORY_SERVICE_URL: http://inventory-service:8082
       USER_SERVICE_URL: http://user-service:8081
+      GENAI_SERVICE_URL: http://genai-service:8084
     depends_on:
       postgres:
         condition: service_healthy
+      genai-service:
+        condition: service_started
+
+  genai-service:
+    image: ghcr.io/aet-devops26/team-efficiency-o-ubahn/genai-service:${IMAGE_TAG:-latest}
+    container_name: fridgeai-genai-service
+    restart: unless-stopped
+    environment:
+      GENAI_PROVIDER: ${GENAI_PROVIDER:-cloud}
+      LOGOS_API_KEY: ${LOGOS_API_KEY:-lg-replace-me}
+      LOGOS_BASE_URL: ${LOGOS_BASE_URL:-https://logos.aet.cit.tum.de/v1}
+      LOGOS_MODEL: ${LOGOS_MODEL:-openai/gpt-oss-120b}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8084/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
 
   client:
     image: ghcr.io/aet-devops26/team-efficiency-o-ubahn/client:${IMAGE_TAG:-latest}

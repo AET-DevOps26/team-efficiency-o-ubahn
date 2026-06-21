@@ -29,3 +29,8 @@ services:
       context: ./Server
       dockerfile: recipe-service/Dockerfile
     image: ghcr.io/aet-devops26/team-efficiency-o-ubahn/recipe-service:latest
+
+  genai-service:
+    build:
+      context: ./GenAI-Service
+    image: ghcr.io/aet-devops26/team-efficiency-o-ubahn/genai-service:latest
