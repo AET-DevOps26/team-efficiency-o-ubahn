@@ -1,90 +1,38 @@
-name: Deploy
+name: Deploy to Azure VM
 
 on:
-  push:
+  workflow_run:
+    workflows: ["Build & Push Images"]
+    types: [completed]
     branches: [main]
+  workflow_dispatch:
 
-env:
-  REGISTRY: ghcr.io
-  IMAGE_BASE: ghcr.io/aet-devops26/team-efficiency-o-ubahn
+concurrency:
+  group: deploy-vm
+  cancel-in-progress: false
 
 jobs:
-  build-and-push:
-    name: Build & Push Docker Images
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-    outputs:
-      image_tag: ${{ github.sha }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and push user-service
-        uses: docker/build-push-action@v6
-        with:
-          context: Server
-          file: Server/user-service/Dockerfile
-          push: true
-          tags: |
-            ${{ env.IMAGE_BASE }}/user-service:${{ github.sha }}
-            ${{ env.IMAGE_BASE }}/user-service:latest
-
-      - name: Build and push inventory-service
-        uses: docker/build-push-action@v6
-        with:
-          context: Server
-          file: Server/inventory-service/Dockerfile
-          push: true
-          tags: |
-            ${{ env.IMAGE_BASE }}/inventory-service:${{ github.sha }}
-            ${{ env.IMAGE_BASE }}/inventory-service:latest
-
-      - name: Build and push recipe-service
-        uses: docker/build-push-action@v6
-        with:
-          context: Server
-          file: Server/recipe-service/Dockerfile
-          push: true
-          tags: |
-            ${{ env.IMAGE_BASE }}/recipe-service:${{ github.sha }}
-            ${{ env.IMAGE_BASE }}/recipe-service:latest
-
-      - name: Build and push client
-        uses: docker/build-push-action@v6
-        with:
-          context: Client
-          push: true
-          tags: |
-            ${{ env.IMAGE_BASE }}/client:${{ github.sha }}
-            ${{ env.IMAGE_BASE }}/client:latest
-
-      - name: Build and push genai-service
-        uses: docker/build-push-action@v6
-        with:
-          context: GenAI-Service
-          push: true
-          tags: |
-            ${{ env.IMAGE_BASE }}/genai-service:${{ github.sha }}
-            ${{ env.IMAGE_BASE }}/genai-service:latest
-
   deploy:
     name: Deploy to Azure VM
-    needs: build-and-push
     runs-on: ubuntu-latest
+    environment: production
     permissions:
       contents: read
       packages: read
-    environment: production
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     steps:
+      - name: Resolve build SHA
+        id: ctx
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_run" ]; then
+            echo "sha=${{ github.event.workflow_run.head_sha }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "sha=${{ github.sha }}" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.ctx.outputs.sha }}
 
       - name: Set up SSH key
         run: |
@@ -109,7 +57,7 @@ jobs:
             -i infrastructure/ansible/inventory.ini \
             infrastructure/ansible/playbook.yml
         env:
-          IMAGE_TAG: ${{ github.sha }}
+          IMAGE_TAG: ${{ steps.ctx.outputs.sha }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
           LOGOS_API_KEY: ${{ secrets.LOGOS_API_KEY }}

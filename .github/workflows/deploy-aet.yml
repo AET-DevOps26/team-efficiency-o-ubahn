@@ -1,0 +1,72 @@
+name: Deploy to AET
+
+on:
+  workflow_run:
+    workflows: ["Build & Push Images"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Image tag to deploy (defaults to the built commit SHA)"
+        required: false
+
+concurrency:
+  group: deploy-aet
+  cancel-in-progress: false
+
+env:
+  NAMESPACE: ge48yep-devops26
+
+jobs:
+  deploy:
+    name: Helm deploy to AET cluster
+    runs-on: ubuntu-latest
+    environment: aet
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    steps:
+      - name: Resolve deploy ref + image tag
+        id: ctx
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_run" ]; then
+            echo "ref=${{ github.event.workflow_run.head_sha }}" >> "$GITHUB_OUTPUT"
+            echo "tag=${{ github.event.workflow_run.head_sha }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "ref=${{ github.sha }}" >> "$GITHUB_OUTPUT"
+            echo "tag=${{ github.event.inputs.image_tag || github.sha }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.ctx.outputs.ref }}
+
+      - name: Write kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          printf '%s' "${{ secrets.KUBECONFIG_B64 }}" | base64 -d > ~/.kube/config
+          chmod 600 ~/.kube/config
+
+      - uses: azure/setup-helm@v4
+
+      - name: Ensure GHCR pull secret
+        run: |
+          kubectl create secret docker-registry ghcr-pull-secret \
+            --docker-server=ghcr.io \
+            --docker-username=${{ github.actor }} \
+            --docker-password='${{ secrets.GHCR_PULL_TOKEN }}' \
+            --namespace ${{ env.NAMESPACE }} \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Helm upgrade --install
+        run: |
+          helm upgrade --install fridgeai ./helm/fridgeai \
+            --namespace ${{ env.NAMESPACE }} \
+            -f helm/fridgeai/values-aet.yaml \
+            --set image.tag="${{ steps.ctx.outputs.tag }}" \
+            --set-string secrets.postgresPassword='${{ secrets.POSTGRES_PASSWORD }}' \
+            --set-string secrets.jwtSecret='${{ secrets.JWT_SECRET }}' \
+            --set-string secrets.logosApiKey='${{ secrets.LOGOS_API_KEY }}' \
+            --wait --timeout 8m
+
+      - name: Show rollout
+        run: kubectl get pods,svc,ingress -n ${{ env.NAMESPACE }}
