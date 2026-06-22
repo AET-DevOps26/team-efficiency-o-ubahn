@@ -9,6 +9,11 @@ metadata:
     {{- include "fridgeai.labels" (dict "name" $name "root" $) | nindent 4 }}
 spec:
   replicas: {{ $svc.replicas | default 1 }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
   selector:
     matchLabels:
       {{- include "fridgeai.selectorLabels" (dict "name" $name "root" $) | nindent 6 }}
