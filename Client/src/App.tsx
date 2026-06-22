@@ -3,12 +3,25 @@ import Login from './pages/Login';
 import Registration from './pages/Registration';
 import Dashboard from './pages/Dashboard';
 
+function isTokenValid(token: string | null): boolean {
+    if (!token) return false;
+    try {
+        const part = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+        const payload = JSON.parse(atob(part));
+        return typeof payload.exp === 'number' && payload.exp * 1000 > Date.now();
+    } catch {
+        return false;
+    }
+}
+
 function App() {
-    // On app startup, check if a user is already logged in from a previous session
+
     const [view, setView] = useState<'login' | 'register'>('login');
     const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
         const token = localStorage.getItem('fridgeai_token');
-        return token !== null; // Returns true if token exists, false otherwise
+        if (isTokenValid(token)) return true;
+        localStorage.removeItem('fridgeai_token');
+        return false;
     });
 
     const handleLoginSuccess = () => {
