@@ -34,6 +34,8 @@ app.kubernetes.io/instance: {{ .root.Release.Name }}
     secretKeyRef:
       name: {{ include "fridgeai.secretName" . }}
       key: JWT_SECRET
+- name: CORS_ORIGINS
+  value: {{ .Values.corsAllowedOrigins | default "http://localhost:5173" | quote }}
 {{- end -}}
 
 {{- define "fridgeai.probeAction" -}}

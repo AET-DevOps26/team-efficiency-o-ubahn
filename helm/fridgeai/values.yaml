@@ -2,6 +2,8 @@ image:
   tag: ""
   pullPolicy: IfNotPresent
 
+corsAllowedOrigins: "http://localhost:5173"
+
 global:
   imagePullSecrets:
     - name: ghcr-pull-secret

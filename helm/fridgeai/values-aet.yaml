@@ -1,6 +1,8 @@
 image:
   pullPolicy: IfNotPresent
 
+corsAllowedOrigins: "https://ge48yep-devops-ss26.stud.k8s.aet.cit.tum.de"
+
 global:
   imagePullSecrets:
     - name: ghcr-pull-secret
