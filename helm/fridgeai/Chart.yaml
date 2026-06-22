@@ -1,0 +1,8 @@
+apiVersion: v2
+name: fridgeai
+description: Umbrella Helm chart for the FridgeAI app (frontend, Spring microservices, GenAI service, Postgres)
+type: application
+# version  = the chart's own version (bump when you change templates)
+# appVersion = default image tag if image.tag is left empty (CI overrides this with the git SHA)
+version: 0.1.0
+appVersion: "latest"

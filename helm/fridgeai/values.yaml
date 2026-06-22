@@ -1,0 +1,133 @@
+image:
+  tag: ""
+  pullPolicy: IfNotPresent
+
+global:
+  imagePullSecrets:
+    - name: ghcr-pull-secret
+
+secrets:
+  create: true
+  existingSecret: ""
+  postgresPassword: "changeme"
+  jwtSecret: "changeme-min-32-characters-long-secret"
+  logosApiKey: "lg-replace-me"
+
+postgres:
+  enabled: true
+  image: postgres:16-alpine
+  auth:
+    database: fridgeai
+    username: fridgeai
+  service:
+    name: postgres
+    port: 5432
+  persistence:
+    size: 5Gi
+    storageClass: ""
+  resources:
+    requests: { cpu: 100m, memory: 256Mi }
+    limits:   { cpu: 500m, memory: 512Mi }
+
+services:
+
+  user-service:
+    enabled: true
+    image:
+      repository: ghcr.io/aet-devops26/team-efficiency-o-ubahn/user-service
+    replicas: 1
+    port: 8081
+    springDatasource: true
+    service:
+      type: ClusterIP
+    probe:
+      type: tcp
+    resources:
+      requests: { cpu: 100m, memory: 384Mi }
+      limits:   { memory: 768Mi }
+
+  inventory-service:
+    enabled: true
+    image:
+      repository: ghcr.io/aet-devops26/team-efficiency-o-ubahn/inventory-service
+    replicas: 1
+    port: 8082
+    springDatasource: true
+    service:
+      type: ClusterIP
+    probe:
+      type: tcp
+    resources:
+      requests: { cpu: 100m, memory: 384Mi }
+      limits:   { memory: 768Mi }
+
+  recipe-service:
+    enabled: true
+    image:
+      repository: ghcr.io/aet-devops26/team-efficiency-o-ubahn/recipe-service
+    replicas: 1
+    port: 8083
+    springDatasource: true
+    env:
+      - name: INVENTORY_SERVICE_URL
+        value: "http://inventory-service:8082"
+      - name: USER_SERVICE_URL
+        value: "http://user-service:8081"
+      - name: GENAI_SERVICE_URL
+        value: "http://genai-service:8084"
+    service:
+      type: ClusterIP
+    probe:
+      type: tcp
+    resources:
+      requests: { cpu: 100m, memory: 384Mi }
+      limits:   { memory: 768Mi }
+
+  genai-service:
+    enabled: true
+    image:
+      repository: ghcr.io/aet-devops26/team-efficiency-o-ubahn/genai-service
+    replicas: 1
+    port: 8084
+    envFromSecret: true
+    env:
+      - name: GENAI_PROVIDER
+        value: "cloud"
+      - name: LOGOS_BASE_URL
+        value: "https://logos.aet.cit.tum.de/v1"
+      - name: LOGOS_MODEL
+        value: "openai/gpt-oss-120b"
+      - name: GENAI_PORT
+        value: "8084"
+    service:
+      type: ClusterIP
+    probe:
+      type: http
+      path: /health
+    resources:
+      requests: { cpu: 100m, memory: 256Mi }
+      limits:   { memory: 512Mi }
+
+  client:
+    enabled: true
+    image:
+      repository: ghcr.io/aet-devops26/team-efficiency-o-ubahn/client
+    replicas: 2
+    port: 80
+    service:
+      type: ClusterIP
+    probe:
+      type: http
+      path: /
+    resources:
+      requests: { cpu: 50m, memory: 64Mi }
+      limits:   { memory: 128Mi }
+
+ingress:
+  enabled: true
+  className: nginx
+  host: fridgeai.example.com
+  annotations: {}
+  tls:
+    enabled: false
+    secretName: ""

@@ -1,0 +1,53 @@
+image:
+  pullPolicy: IfNotPresent
+
+global:
+  imagePullSecrets:
+    - name: ghcr-pull-secret
+
+postgres:
+  persistence:
+    size: 5Gi
+    storageClass: csi-rbd-sc
+  resources:
+    requests: { cpu: 100m, memory: 256Mi }
+    limits:   { cpu: 500m, memory: 512Mi }
+
+services:
+  user-service:
+    replicas: 1
+    resources:
+      requests: { cpu: 100m, memory: 384Mi }
+      limits:   { cpu: 500m, memory: 768Mi }
+  inventory-service:
+    replicas: 1
+    resources:
+      requests: { cpu: 100m, memory: 384Mi }
+      limits:   { cpu: 500m, memory: 768Mi }
+  recipe-service:
+    replicas: 1
+    resources:
+      requests: { cpu: 100m, memory: 384Mi }
+      limits:   { cpu: 500m, memory: 768Mi }
+  genai-service:
+    replicas: 1
+    resources:
+      requests: { cpu: 100m, memory: 256Mi }
+      limits:   { cpu: 500m, memory: 512Mi }
+  client:
+    replicas: 1
+    service:
+      type: ClusterIP
+    resources:
+      requests: { cpu: 50m, memory: 64Mi }
+      limits:   { cpu: 200m, memory: 128Mi }
+
+ingress:
+  enabled: true
+  className: nginx
+  host: ge48yep-devops-ss26.stud.k8s.aet.cit.tum.de
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+  tls:
+    enabled: true
+    secretName: fridgeai-tls

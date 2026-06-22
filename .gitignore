@@ -38,6 +38,12 @@ $RECYCLE.BIN/
 *.key
 secrets.*
 
+# ---------- Kubeconfigs / cluster tokens (never commit) ----------
+kube/
+kubeconfig*
+*.kubeconfig
+*-kubeconfig.yaml
+
 # ---------- Logs ----------
 *.log
 logs/

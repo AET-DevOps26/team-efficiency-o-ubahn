@@ -1,0 +1,44 @@
+name: Build & Push Images
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  IMAGE_BASE: ghcr.io/aet-devops26/team-efficiency-o-ubahn
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: user-service,      context: Server,         file: Server/user-service/Dockerfile }
+          - { name: inventory-service, context: Server,         file: Server/inventory-service/Dockerfile }
+          - { name: recipe-service,    context: Server,         file: Server/recipe-service/Dockerfile }
+          - { name: client,            context: Client,         file: Client/Dockerfile }
+          - { name: genai-service,     context: GenAI-Service,  file: GenAI-Service/Dockerfile }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.file }}
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ${{ env.IMAGE_BASE }}/${{ matrix.name }}:${{ github.sha }}
+            ${{ env.IMAGE_BASE }}/${{ matrix.name }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
