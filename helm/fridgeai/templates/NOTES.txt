@@ -1,0 +1,32 @@
+FridgeAI ({{ .Release.Name }}) deployed to namespace {{ .Release.Namespace }}.
+
+Workloads:
+{{- range $name, $svc := .Values.services }}
+{{- if $svc.enabled }}
+  - {{ $name }} ({{ $svc.replicas | default 1 }} replica) on port {{ $svc.port }}
+{{- end }}
+{{- end }}
+{{- if .Values.postgres.enabled }}
+  - postgres (StatefulSet, {{ .Values.postgres.persistence.size }} PVC)
+{{- end }}
+
+Check status:
+  kubectl get pods,svc -n {{ .Release.Namespace }}
+
+{{- if .Values.ingress.enabled }}
+
+Open the app at: http://{{ .Values.ingress.host }}
+(point that host's DNS / your hosts file at the ingress controller's external IP)
+{{- else }}
+
+Port-forward the client to test:
+  kubectl port-forward svc/client 8080:80 -n {{ .Release.Namespace }}
+  open http://localhost:8080
+{{- end }}
+
+{{- if .Values.global.imagePullSecrets }}
+Reminder: this release expects a GHCR pull secret named
+"{{ (index .Values.global.imagePullSecrets 0).name }}" to exist in the namespace.
+{{- else }}
+(No imagePullSecrets configured — images are expected to be present locally.)
+{{- end }}

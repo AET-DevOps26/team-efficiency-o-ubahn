@@ -1,0 +1,32 @@
+image:
+  tag: latest
+  pullPolicy: Never
+
+global:
+  imagePullSecrets: []
+
+secrets:
+  create: true
+  postgresPassword: "localpw"
+  jwtSecret: "local-dev-jwt-secret-that-is-over-32-characters"
+  logosApiKey: "lg-replace-me"
+
+postgres:
+  persistence:
+    size: 2Gi
+    storageClass: ""
+
+ingress:
+  enabled: false
+
+services:
+  client:
+    replicas: 1
+  user-service:
+    replicas: 1
+  inventory-service:
+    replicas: 1
+  recipe-service:
+    replicas: 1
+  genai-service:
+    replicas: 1
