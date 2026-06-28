@@ -7,12 +7,19 @@ import com.fridgeai.user.model.Preference;
 import com.fridgeai.user.model.User;
 import com.fridgeai.user.repository.UserRepository;
 import com.fridgeai.user.util.JwtUtil;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirements;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/auth")
+@Tag(name = "Authentication", description = "Register and log in to obtain a JWT")
+@SecurityRequirements
 public class AuthController {
 
     private final UserRepository userRepository;
@@ -25,6 +32,11 @@ public class AuthController {
         this.passwordEncoder = passwordEncoder;
     }
 
+    @Operation(summary = "Register a new account", description = "Creates a user with default preferences and returns a JWT.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Registered; JWT returned"),
+            @ApiResponse(responseCode = "409", description = "Email already registered")
+    })
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
         if (userRepository.findByEmail(request.email()).isPresent()) {
@@ -42,6 +54,11 @@ public class AuthController {
         return ResponseEntity.ok(new AuthResponse(jwtUtil.generateToken(request.email())));
     }
 
+    @Operation(summary = "Log in", description = "Validates credentials and returns a JWT.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Authenticated; JWT returned"),
+            @ApiResponse(responseCode = "401", description = "Invalid email or password")
+    })
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
         User user = userRepository.findByEmail(request.email()).orElse(null);
