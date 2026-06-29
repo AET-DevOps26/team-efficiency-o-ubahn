@@ -18,6 +18,9 @@ app = FastAPI(
     title="FridgeAI GenAI Service",
     description="Generates recipes from a user's available ingredients and preferences.",
     version="1.0.0",
+    docs_url="/genai/docs",
+    openapi_url="/genai/openapi.json",
+    redoc_url="/genai/redoc",
 )
 
 
