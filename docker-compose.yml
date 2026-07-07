@@ -51,6 +51,8 @@ services:
     image: ghcr.io/aet-devops26/team-efficiency-o-ubahn/recipe-service:${IMAGE_TAG:-latest}
     container_name: fridgeai-recipe-service
     restart: unless-stopped
+    ports:
+      - "8083:8083"
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/fridgeai
       SPRING_DATASOURCE_USERNAME: fridgeai

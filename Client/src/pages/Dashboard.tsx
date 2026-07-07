@@ -28,16 +28,13 @@ function Dashboard() {
         ...(jwtToken ? { Authorization: `Bearer ${jwtToken}` } : {}),
     }), [jwtToken]);
 
-    const [aiRecipes] = useState<Recipe[]>([
-        { id: '101', title: 'Creamy Garlic Chicken Spinach', matchPercentage: 100, missedIngredients: [] },
-        { id: '102', title: 'Classic Omelette', matchPercentage: 75, missedIngredients: ['Butter'] },
-    ]);
-
     const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
     const [newName, setNewName] = useState('');
     const [newQuantity, setNewQuantity] = useState<number>(1);
     const [newUnit, setNewUnit] = useState<UnitType>('PIECE');
     const [newExpiry, setNewExpiry] = useState('');
+    const [isGeneratingRecipes, setIsGeneratingRecipes] = useState<boolean>(false);
+    const [aiRecipes, setAiRecipes] = useState<Recipe[]>([]);
 
     useEffect(() => {
         const fetchUserInventory = async () => {
@@ -122,6 +119,30 @@ function Dashboard() {
         } catch (error) {
             console.error('Failed deleting ingredient:', error);
             alert('Could not remove item — Inventory Service unreachable. Please try again.');
+        }
+    };
+
+    const handleGenerateRecipes = async () => {
+        setIsGeneratingRecipes(true);
+        try {
+            const response = await fetch('/api/recipes/generate', {
+                method: 'POST',
+                headers: authHeaders(),
+            });
+
+            if (!response.ok) {
+                throw new Error(`Recipe Service responded with status ${response.status}`);
+            }
+
+            const data: Recipe[] = await response.json();
+            setAiRecipes(data);
+        }
+        catch (error) {
+            console.error('Failed generating AI recipes:', error);
+            alert('Could not generate meals. Check the recipe-service terminal logs.');
+        }
+        finally {
+            setIsGeneratingRecipes(false);
         }
     };
 
@@ -272,13 +293,34 @@ function Dashboard() {
                 {/* Right Tab: AI Output Tracking Panel */}
                 <aside style={panelCard}>
                     <h3 style={{ margin: '0 0 15px 0', color: '#ffffff', fontSize: '20px' }}>AI Recipe Genius</h3>
+
                     <button
-                        //onClick={handleGenerateRecipes}
-                        style={{ width: '100%', padding: '12px', backgroundColor: '#9b59b6', color: 'white', border: 'none', borderRadius: '6px', fontSize: '15px', fontWeight: 'bold', cursor: 'pointer', marginBottom: '20px', boxShadow: '0 2px 5px rgba(155,89,182,0.3)' }}>
-                        ✨ Auto-Generate Meals
+                        onClick={handleGenerateRecipes}
+                        disabled={isGeneratingRecipes}
+                        style={{
+                            width: '100%',
+                            padding: '12px',
+                            backgroundColor: '#9b59b6',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '6px',
+                            fontSize: '15px',
+                            fontWeight: 'bold',
+                            cursor: 'pointer',
+                            marginBottom: '20px',
+                            boxShadow: '0 2px 5px rgba(155,89,182,0.3)',
+                            opacity: isGeneratingRecipes ? 0.7 : 1
+                        }}
+                    >
+                        {isGeneratingRecipes ? '🔄 Syncing AI Menu...' : '✨ Auto-Generate Meals'}
                     </button>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        {aiRecipes.length === 0 && !isGeneratingRecipes && (
+                            <p style={{ fontSize: '14px', color: '#b3b3b3', textAlign: 'center', marginTop: '10px' }}>
+                                No meals generated yet.
+                            </p>
+                        )}
                         {aiRecipes.map(recipe => (
                             <div key={recipe.id} style={{ padding: '14px', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', backgroundColor: 'rgba(255,255,255,0.05)' }}>
                                 <h5 style={{ margin: '0 0 6px 0', fontSize: '14px', color: '#ffffff' }}>{recipe.title}</h5>
