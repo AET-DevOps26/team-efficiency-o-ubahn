@@ -12,10 +12,22 @@ interface Ingredient {
 }
 
 interface Recipe {
-    id: string;
+    id: number;
     title: string;
-    matchPercentage: number;
-    missedIngredients: string[];
+    instructions: string;
+    prepTimeMinutes?: number;
+    nutritionInfo?: string;
+}
+
+interface UserPreferences {
+    allergies: string[];
+    dietFocus: string;
+}
+
+interface Favourite {
+    id: number;
+    userEmail: string;
+    recipe: Recipe;
 }
 
 function Dashboard() {
@@ -33,8 +45,14 @@ function Dashboard() {
     const [newQuantity, setNewQuantity] = useState<number>(1);
     const [newUnit, setNewUnit] = useState<UnitType>('PIECE');
     const [newExpiry, setNewExpiry] = useState('');
+    const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false);
+    const [preferences, setPreferences] = useState<UserPreferences>({ allergies: [], dietFocus: '' });
+    const [isSavingPrefs, setIsSavingPrefs] = useState<boolean>(false);
     const [isGeneratingRecipes, setIsGeneratingRecipes] = useState<boolean>(false);
-    const [aiRecipes, setAiRecipes] = useState<Recipe[]>([]);
+    const [aiRecipes, setAiRecipes] = useState<Recipe | null>(null);
+    const [isRecipeModalOpen, setIsRecipeModalOpen] = useState<boolean>(false);
+    const [activeTab, setActiveTab] = useState<'GENERATED' | 'FAVORITES'>('GENERATED');
+    const [favorites, setFavorites] = useState<Favourite[]>([]);
 
     useEffect(() => {
         const fetchUserInventory = async () => {
@@ -52,6 +70,39 @@ function Dashboard() {
             }
         };
         fetchUserInventory();
+    }, [authHeaders]);
+
+    useEffect(() => {
+        const fetchPreferences = async () => {
+            try {
+                const response = await fetch('/api/preferences/me', { headers: authHeaders() });
+                if (response.ok) {
+                    const data: UserPreferences = await response.json();
+                    setPreferences({
+                        allergies: Array.isArray(data.allergies) ? data.allergies : [],
+                        dietFocus: data.dietFocus || ''
+                    });
+                }
+            } catch (error) {
+                console.error('Failed loading user profile configurations:', error);
+            }
+        };
+        fetchPreferences();
+    }, [authHeaders]);
+
+    useEffect(() => {
+        const fetchUserFavorites = async () => {
+            try {
+                const response = await fetch('/api/recipes/favourites', { headers: authHeaders() });
+                if (response.ok) {
+                    const data: Favourite[] = await response.json();
+                    setFavorites(data);
+                }
+            } catch (error) {
+                console.error('Failed fetching saved favorites list:', error);
+            }
+        };
+        fetchUserFavorites();
     }, [authHeaders]);
 
     const calculateDaysLeft = (expiryDateStr: string): number => {
@@ -76,7 +127,7 @@ function Dashboard() {
             name: newName,
             quantity: newQuantity,
             unit: newUnit,
-            expiryDate: newExpiry, // YYYY-MM-DD — maps to the backend LocalDate
+            expiryDate: newExpiry,
         };
 
         try {
@@ -134,7 +185,7 @@ function Dashboard() {
                 throw new Error(`Recipe Service responded with status ${response.status}`);
             }
 
-            const data: Recipe[] = await response.json();
+            const data: Recipe = await response.json();
             setAiRecipes(data);
         }
         catch (error) {
@@ -143,6 +194,68 @@ function Dashboard() {
         }
         finally {
             setIsGeneratingRecipes(false);
+        }
+    };
+
+    const isRecipeFavourited = (recipeId: number | undefined): boolean => {
+        if (!recipeId) return false;
+        return favorites.some(fav => fav.recipe.id === recipeId);
+    };
+
+    const handleToggleFavourite = async (e: React.MouseEvent, recipe: Recipe) => {
+        e.stopPropagation();
+
+        const recipeId = recipe.id;
+        const currentlyFavourited = isRecipeFavourited(recipeId);
+
+        try {
+            if (currentlyFavourited) {
+                const response = await fetch(`/api/recipes/${recipeId}/favourite`, {
+                    method: 'DELETE',
+                    headers: authHeaders(),
+                });
+                if (!response.ok) throw new Error();
+                setFavorites(prev => prev.filter(fav => fav.recipe.id !== recipeId));
+            } else {
+                const response = await fetch(`/api/recipes/${recipeId}/favourite`, {
+                    method: 'POST',
+                    headers: authHeaders(),
+                });
+                if (!response.ok) throw new Error();
+                const newFav: Favourite = await response.json();
+                setFavorites(prev => [...prev, newFav]);
+            }
+        } catch (error) {
+            console.error('Failed toggling favorited state with recipe service:', error);
+            alert('Could not update your favorites list. Try again!');
+        }
+    };
+
+    const handleSavePreferences = async () => {
+        setIsSavingPrefs(true);
+
+        const payload = {
+            dietFocus: preferences.dietFocus,
+            allergies: preferences.allergies
+                .map(s => s.trim())
+                .filter(Boolean) // Cleans out accidental empty slots from trailing commas
+        };
+
+        try {
+            const response = await fetch('/api/preferences/me', {
+                method: 'PUT',
+                headers: authHeaders(),
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to update preferences backend configurations');
+            }
+        } catch (error) {
+            console.error('Error syncing preference profile data:', error);
+            alert('Could not save your dietary profile. Please try again.');
+        } finally {
+            setIsSavingPrefs(false);
         }
     };
 
@@ -177,9 +290,9 @@ function Dashboard() {
         backgroundColor: '#111625',
         color: 'white',
         boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
-        width: '100%', // Makes navbar span the entire top screen width
+        width: '100%',
         boxSizing: 'border-box'
-};
+    };
 
     const mainContent: React.CSSProperties = {
         display: 'grid',
@@ -239,7 +352,29 @@ function Dashboard() {
 
             {/* Top Header Layer */}
             <nav style={navBar}>
-                <h2 style={{ margin: 0, fontWeight: 'bold', letterSpacing: '0.5px' }}>FridgeAI Control Panel</h2>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                    <button
+                        onClick={() => setIsDrawerOpen(true)}
+                        title="Open Diet Profiles"
+                        style={{
+                            background: 'transparent',
+                            border: 'none',
+                            color: '#ffffff',
+                            fontSize: '24px',
+                            cursor: 'pointer',
+                            padding: '0px 5px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            transition: 'color 0.2s'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.color = '#9b59b6'}
+                        onMouseLeave={(e) => e.currentTarget.style.color = '#ffffff'}
+                    >
+                        ☰
+                    </button>
+                    <h2 style={{ margin: 0, fontWeight: 'bold', letterSpacing: '0.5px' }}>FridgeAI Control Panel</h2>
+                </div>
                 <button onClick={handleSignOut} style={{ padding: '8px 16px', backgroundColor: '#e74c3c', color: 'white', border: 'none', borderRadius: '5px', fontWeight: 'bold', cursor: 'pointer', transition: '0.2s' }}>
                     Sign Out
                 </button>
@@ -307,7 +442,7 @@ function Dashboard() {
                             fontSize: '15px',
                             fontWeight: 'bold',
                             cursor: 'pointer',
-                            marginBottom: '20px',
+                            marginBottom: '15px',
                             boxShadow: '0 2px 5px rgba(155,89,182,0.3)',
                             opacity: isGeneratingRecipes ? 0.7 : 1
                         }}
@@ -315,28 +450,334 @@ function Dashboard() {
                         {isGeneratingRecipes ? '🔄 Syncing AI Menu...' : '✨ Auto-Generate Meals'}
                     </button>
 
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        {aiRecipes.length === 0 && !isGeneratingRecipes && (
-                            <p style={{ fontSize: '14px', color: '#b3b3b3', textAlign: 'center', marginTop: '10px' }}>
-                                No meals generated yet.
-                            </p>
-                        )}
-                        {aiRecipes.map(recipe => (
-                            <div key={recipe.id} style={{ padding: '14px', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', backgroundColor: 'rgba(255,255,255,0.05)' }}>
-                                <h5 style={{ margin: '0 0 6px 0', fontSize: '14px', color: '#ffffff' }}>{recipe.title}</h5>
-                                <div style={{ fontSize: '12px', color: '#27ae60', fontWeight: 'bold' }}>
-                                    Match Rating: {recipe.matchPercentage}%
-                                </div>
-                                {recipe.missedIngredients.length > 0 && (
-                                    <div style={{ fontSize: '12px', color: '#e67e22', marginTop: '6px' }}>
-                                        Missing: {recipe.missedIngredients.join(', ')}
+                    {/* Sub-Navigation Tab Bar */}
+                    <div style={{ display: 'flex', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', marginBottom: '15px', gap: '10px' }}>
+                        <button
+                            onClick={() => setActiveTab('GENERATED')}
+                            style={{
+                                flex: 1,
+                                padding: '10px 0',
+                                backgroundColor: 'transparent',
+                                color: activeTab === 'GENERATED' ? '#9b59b6' : '#b3b3b3',
+                                border: 'none',
+                                borderBottom: activeTab === 'GENERATED' ? '2px solid #9b59b6' : '2px solid transparent',
+                                fontWeight: 'bold',
+                                fontSize: '13px',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s'
+                            }}
+                        >
+                            🤖 AI Menu
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('FAVORITES')}
+                            style={{
+                                flex: 1,
+                                padding: '10px 0',
+                                backgroundColor: 'transparent',
+                                color: activeTab === 'FAVORITES' ? '#e74c3c' : '#b3b3b3',
+                                border: 'none',
+                                borderBottom: activeTab === 'FAVORITES' ? '2px solid #e74c3c' : '2px solid transparent',
+                                fontWeight: 'bold',
+                                fontSize: '13px',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s'
+                            }}
+                        >
+                            ⭐ Favorites ({favorites.length})
+                        </button>
+                    </div>
+
+                    {/* Dynamic Tab Panel Views */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: 'calc(100vh - 280px)', overflowY: 'auto', paddingRight: '4px' }}>
+
+                        {/* TAB 1: AI GENERATED MENU */}
+                        {activeTab === 'GENERATED' && (
+                            <>
+                                {!aiRecipes && !isGeneratingRecipes && (
+                                    <p style={{ fontSize: '14px', color: '#b3b3b3', textAlign: 'center', marginTop: '10px' }}>No meals generated yet.</p>
+                                )}
+
+                                {aiRecipes && (
+                                    <div
+                                        key={aiRecipes.id}
+                                        onClick={() => setIsRecipeModalOpen(true)}
+                                        style={{ padding: '14px', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', backgroundColor: 'rgba(255,255,255,0.05)', cursor: 'pointer', transition: 'transform 0.2s, background-color 0.2s', maxHeight: '180px', overflow: 'hidden', position: 'relative' }}
+                                        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                                        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'; e.currentTarget.style.transform = 'translateY(0)'; }}
+                                    >
+                                        {/* Dynamic Floating Action Star */}
+                                        <button
+                                            onClick={(e) => handleToggleFavourite(e, aiRecipes)}
+                                            style={{ position: 'absolute', top: '10px', right: '10px', background: 'transparent', border: 'none', fontSize: '20px', cursor: 'pointer', outline: 'none', transition: 'transform 0.1s ease', zIndex: 10 }}
+                                            title={isRecipeFavourited(aiRecipes.id) ? "Remove from Favorites" : "Add to Favorites"}
+                                            onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.2)'}
+                                            onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1.0)'}
+                                        >
+                                            {isRecipeFavourited(aiRecipes.id) ? '⭐' : '☆'}
+                                        </button>
+
+                                        <h4 style={{ margin: '0 0 8px 0', fontSize: '15px', color: '#ffffff', fontWeight: 'bold', paddingRight: '25px' }}>{aiRecipes.title}</h4>
+                                        {aiRecipes.prepTimeMinutes && <div style={{ fontSize: '11px', color: '#7f8c8d', marginBottom: '8px' }}>⏱️ Prep Time: <strong>{aiRecipes.prepTimeMinutes} mins</strong></div>}
+                                        <div style={{ fontSize: '12px', color: '#b3b3b3', lineHeight: '1.4', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{aiRecipes.instructions}</div>
+                                        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '40px', background: 'linear-gradient(transparent, rgba(25, 25, 30, 0.95))', pointerEvents: 'none' }} />
                                     </div>
                                 )}
-                            </div>
-                        ))}
+                            </>
+                        )}
+
+                        {/* TAB 2: PERSISTENT SAVED FAVORITES */}
+                        {activeTab === 'FAVORITES' && (
+                            <>
+                                {favorites.length === 0 ? (
+                                    <div style={{ textAlign: 'center', padding: '20px 10px' }}>
+                                        <p style={{ fontSize: '14px', color: '#b3b3b3', margin: '0 0 5px 0' }}>Your recipe book is empty.</p>
+                                        <p style={{ fontSize: '12px', color: '#7f8c8d', fontStyle: 'italic', margin: 0 }}>Tap the star on an AI menu selection to pin it here.</p>
+                                    </div>
+                                ) : (
+                                    favorites.map(fav => (
+                                        <div
+                                            key={fav.id}
+                                            onClick={() => { setAiRecipes(fav.recipe); setIsRecipeModalOpen(true); }}
+                                            style={{ padding: '14px', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', backgroundColor: 'rgba(255,255,255,0.03)', cursor: 'pointer', transition: 'transform 0.2s, background-color 0.2s', maxHeight: '180px', overflow: 'hidden', position: 'relative' }}
+                                            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.06)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                                            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.03)'; e.currentTarget.style.transform = 'translateY(0)'; }}
+                                        >
+                                            {/* Star on Favorite Card to allow quick unfavoriting */}
+                                            <button
+                                                onClick={(e) => handleToggleFavourite(e, fav.recipe)}
+                                                style={{ position: 'absolute', top: '10px', right: '10px', background: 'transparent', border: 'none', fontSize: '20px', cursor: 'pointer', zIndex: 10 }}
+                                                title="Remove from Favorites"
+                                            >
+                                                ⭐
+                                            </button>
+
+                                            <h4 style={{ margin: '0 0 8px 0', fontSize: '15px', color: '#ffffff', fontWeight: 'bold', paddingRight: '25px' }}>{fav.recipe.title}</h4>
+                                            {fav.recipe.prepTimeMinutes && <div style={{ fontSize: '11px', color: '#7f8c8d', marginBottom: '8px' }}>⏱️ Prep: {fav.recipe.prepTimeMinutes} mins</div>}
+                                            <div style={{ fontSize: '12px', color: '#b3b3b3', lineHeight: '1.4', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{fav.recipe.instructions}</div>
+                                            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '40px', background: 'linear-gradient(transparent, rgba(25, 25, 30, 0.95))', pointerEvents: 'none' }} />
+                                        </div>
+                                    ))
+                                )}
+                            </>
+                        )}
+
                     </div>
                 </aside>
+
+                {/* --- AI RECIPE DETAILS POPUP WINDOW --- */}
+                {isRecipeModalOpen && aiRecipes && (
+                    <div
+                        onClick={() => setIsRecipeModalOpen(false)}
+                        style={{
+                            position: 'fixed',
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            backgroundColor: 'rgba(0, 0, 0, 0.75)',
+                            backdropFilter: 'blur(4px)',
+                            display: 'flex',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            zIndex: 1100
+                        }}
+                    >
+                        <div
+                            onClick={(e) => e.stopPropagation()}
+                            style={{
+                                backgroundColor: '#1c1c24',
+                                padding: '30px',
+                                borderRadius: '12px',
+                                width: '550px',
+                                maxWidth: '90vw',
+                                maxHeight: '80vh',
+                                overflowY: 'auto',
+                                boxShadow: '0 20px 50px rgba(0,0,0,0.6)',
+                                border: '1px solid rgba(255,255,255,0.1)',
+                                color: '#ffffff',
+                                position: 'relative'
+                            }}
+                        >
+                            <button
+                                onClick={() => setIsRecipeModalOpen(false)}
+                                title="Close window"
+                                style={{
+                                    position: 'absolute',
+                                    top: '15px',
+                                    right: '20px',
+                                    backgroundColor: 'transparent',
+                                    color: '#a0a0a0',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    fontSize: '24px',
+                                    fontWeight: '300',
+                                    transition: 'color 0.2s'
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.color = '#ffffff'}
+                                onMouseLeave={(e) => e.currentTarget.style.color = '#a0a0a0'}
+                            >
+                                ×
+                            </button>
+
+                            <h3 style={{ margin: '0 0 6px 0', color: '#ffffff', fontSize: '22px', paddingRight: '30px' }}>
+                                {aiRecipes.title}
+                            </h3>
+
+                            {aiRecipes.prepTimeMinutes && (
+                                <div style={{ fontSize: '13px', color: '#9b59b6', fontWeight: 'bold', marginBottom: '20px' }}>
+                                    ⏱️ Estimated Preparation: {aiRecipes.prepTimeMinutes} minutes
+                                </div>
+                            )}
+
+                            <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '15px' }}>
+                                <h5 style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#2ecc71', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                    Cooking Instructions:
+                                </h5>
+                                <p style={{ margin: 0, fontSize: '14px', color: '#e0e0e0', whiteSpace: 'pre-line', lineHeight: '1.5' }}>
+                                    {aiRecipes.instructions}
+                                </p>
+                            </div>
+
+                            {aiRecipes.nutritionInfo && (
+                                <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '12px', marginTop: '20px', fontSize: '13px', color: '#95a5a6', fontStyle: 'italic' }}>
+                                    🌱 Macros: {aiRecipes.nutritionInfo}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
             </main>
+
+            {/* --- SLIDING LEFT SIDE PROFILE DRAWER (30% Width) --- */}
+            {isDrawerOpen && (
+                <div
+                    onClick={() => setIsDrawerOpen(false)}
+                    style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                        backdropFilter: 'blur(3px)',
+                        zIndex: 1200,
+                        transition: 'opacity 0.3s ease'
+                    }}
+                >
+                    <div
+                        onClick={(e) => e.stopPropagation()}
+                        style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            bottom: 0,
+                            width: '30vw',
+                            minWidth: '320px',
+                            backgroundColor: '#16161e',
+                            borderRight: '1px solid rgba(255, 255, 255, 0.1)',
+                            boxShadow: '10px 0 40px rgba(0,0,0,0.5)',
+                            padding: '30px 24px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            color: '#ffffff',
+                            boxSizing: 'border-box'
+                        }}
+                    >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
+                            <h3 style={{ margin: 0, fontSize: '20px', fontWeight: 'bold', color: '#ffffff' }}>
+                                Dietary Profile
+                            </h3>
+                            <button
+                                onClick={() => setIsDrawerOpen(false)}
+                                style={{ background: 'transparent', border: 'none', color: '#a0a0a0', fontSize: '22px', cursor: 'pointer' }}
+                                onMouseEnter={(e) => e.currentTarget.style.color = '#ffffff'}
+                                onMouseLeave={(e) => e.currentTarget.style.color = '#a0a0a0'}
+                            >
+                                ×
+                            </button>
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', flexGrow: 1 }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                <label style={{ fontSize: '12px', color: '#9b59b6', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                    Allergies
+                                </label>
+                                <textarea
+                                    value={Array.isArray(preferences.allergies) ? preferences.allergies.join(', ') : ''}
+                                    onChange={(e) => {
+                                        const val = e.target.value;
+                                        setPreferences(prev => ({ ...prev, allergies: val.split(',').map(s => s.trim()) }))}
+                                    }
+                                    placeholder="e.g., Peanuts, Dairy, Shellfish..."
+                                    style={{
+                                        backgroundColor: 'rgba(255,255,255,0.04)',
+                                        border: '1px solid rgba(255,255,255,0.1)',
+                                        borderRadius: '6px',
+                                        padding: '12px',
+                                        color: '#ffffff',
+                                        fontSize: '14px',
+                                        minHeight: '80px',
+                                        resize: 'none',
+                                        outline: 'none',
+                                        fontFamily: 'inherit',
+                                        lineHeight: '1.4'
+                                    }}
+                                />
+                            </div>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                <label style={{ fontSize: '12px', color: '#9b59b6', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                    Dietary Focus
+                                </label>
+                                <textarea
+                                    value={preferences.dietFocus}
+                                    onChange={(e) => setPreferences(prev => ({ ...prev, dietFocus: e.target.value }))}
+                                    placeholder="e.g., High-Protein, Low-Carb, Ketogenic, Vegan..."
+                                    style={{
+                                        backgroundColor: 'rgba(255,255,255,0.04)',
+                                        border: '1px solid rgba(255,255,255,0.1)',
+                                        borderRadius: '6px',
+                                        padding: '12px',
+                                        color: '#ffffff',
+                                        fontSize: '14px',
+                                        minHeight: '80px',
+                                        resize: 'none',
+                                        outline: 'none',
+                                        fontFamily: 'inherit',
+                                        lineHeight: '1.4'
+                                    }}
+                                />
+                            </div>
+                        </div>
+
+                        <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '20px', marginTop: 'auto' }}>
+                            <button
+                                onClick={handleSavePreferences}
+                                disabled={isSavingPrefs}
+                                style={{
+                                    width: '100%',
+                                    padding: '12px',
+                                    backgroundColor: '#27ae60',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    fontSize: '14px',
+                                    fontWeight: 'bold',
+                                    cursor: 'pointer',
+                                    boxShadow: '0 2px 5px rgba(39,174,96,0.2)',
+                                    transition: 'background-color 0.2s',
+                                    opacity: isSavingPrefs ? 0.7 : 1
+                                }}
+                                onMouseEnter={(e) => { if(!isSavingPrefs) e.currentTarget.style.backgroundColor = '#219653'; }}
+                                onMouseLeave={(e) => { if(!isSavingPrefs) e.currentTarget.style.backgroundColor = '#27ae60'; }}
+                            >
+                                {isSavingPrefs ? '💾 Saving Profiles...' : 'Save Changes'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* --- ADD ITEM INTERACTIVE FORM WINDOW (MODAL) --- */}
             {isModalOpen && (
