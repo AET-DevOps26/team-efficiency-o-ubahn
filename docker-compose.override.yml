@@ -36,3 +36,10 @@ services:
     image: ghcr.io/aet-devops26/team-efficiency-o-ubahn/genai-service:latest
     ports:
       - "8084:8084"
+    volumes:
+      - ./GenAI-Service/.env:/app/.env
+    environment:
+      GENAI_PROVIDER: null
+      LOGOS_API_KEY: null
+      LOGOS_BASE_URL: null
+      LOGOS_MODEL: null

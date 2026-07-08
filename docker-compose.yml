@@ -71,6 +71,8 @@ services:
     image: ghcr.io/aet-devops26/team-efficiency-o-ubahn/genai-service:${IMAGE_TAG:-latest}
     container_name: fridgeai-genai-service
     restart: unless-stopped
+    ports:
+      - "8084:8084"
     environment:
       GENAI_PROVIDER: ${GENAI_PROVIDER:-cloud}
       LOGOS_API_KEY: ${LOGOS_API_KEY:-lg-replace-me}
