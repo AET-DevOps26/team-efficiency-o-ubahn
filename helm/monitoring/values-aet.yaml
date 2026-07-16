@@ -1,15 +1,17 @@
 prometheusOperator:
   createCustomResourceBindings: false
   rbac:
-    namespaced: true
+    create: true
+    useClusterRole: false
   namespaces:
     releaseNamespace: true
   admissionWebhooks:
-      enabled: false
+    enabled: false
 
 prometheus:
-  nodeExporter:
-    enabled: false
+  rbac:
+    create: true
+    useClusterRole: false
   prometheusSpec:
     serviceMonitorNamespaceSelector: {}
     serviceMonitorSelector:
@@ -25,7 +27,7 @@ prometheus:
 
 grafana:
   rbac:
-    namespaced: true
+    create: true
   persistence:
     enabled: true
     size: 2Gi
