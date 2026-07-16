@@ -80,6 +80,65 @@ and preferences from `user-service` (internal endpoints), then calls
 | API docs | springdoc-openapi (aggregated Swagger UI) per Spring service; FastAPI docs for GenAI |
 | Infra / CI | Docker Compose, Helm v3, Kubernetes (AET cluster), Terraform + Ansible (Azure VM), GitHub Actions, GHCR |
 
+d## Database schema
+
+One PostgreSQL 16 instance, one database (`fridgeai`), one schema per service —
+created on first startup by
+[`infra/postgres/init/01-schemas.sql`](infra/postgres/init/01-schemas.sql)
+(mounted into the container's `/docker-entrypoint-initdb.d`). Tables are created
+and evolved by Hibernate (`ddl-auto=update`) from the JPA entities in each
+service's `model/` package, which are the source of truth for the definitions
+below. Services never touch each other's schema; cross-service references use
+the user's email (carried in the JWT), so there are no cross-schema foreign keys.
+
+### Schema `user_service` (owned by user-service)
+
+| Table | Column | Type | Notes |
+|-------|--------|------|-------|
+| `users` | `id` | `bigint` | PK, auto-increment |
+| | `email` | `varchar` | unique, not null |
+| | `password_hash` | `varchar` | not null, BCrypt |
+| | `created_at` | `timestamp` | set on insert |
+| `preference` | `id` | `bigint` | PK, auto-increment |
+| | `diet_focus` | `varchar` | e.g. `protein`, `veggie`; nullable |
+| | `user_id` | `bigint` | FK → `users.id`, one-to-one |
+| `preference_allergies` | `preference_id` | `bigint` | FK → `preference.id` |
+| | `allergy` | `varchar` | one row per allergy |
+
+### Schema `inventory_service` (owned by inventory-service)
+
+| Table | Column | Type | Notes |
+|-------|--------|------|-------|
+| `inventory` | `id` | `bigint` | PK, auto-increment |
+| | `user_email` | `varchar` | one inventory per user |
+| `ingredient` | `id` | `bigint` | PK, auto-increment |
+| | `name` | `varchar` | |
+| | `quantity` | `double precision` | |
+| | `unit` | `varchar` | enum: `GRAM`, `KILOGRAM`, `MILLILITRE`, `LITRE`, `PIECE`, `SLICE`, `CLOVE`, `TEASPOON`, `TABLESPOON`, `CUP` |
+| | `expiry_date` | `date` | |
+| | `inventory_id` | `bigint` | FK → `inventory.id`, cascade delete |
+
+### Schema `recipe_service` (owned by recipe-service)
+
+| Table | Column | Type | Notes |
+|-------|--------|------|-------|
+| `recipe` | `id` | `bigint` | PK, auto-increment |
+| | `title` | `varchar` | |
+| | `instructions` | `text` | full step-by-step text |
+| | `prep_time_minutes` | `integer` | |
+| | `nutrition_info` | `varchar` | |
+| `recipe_ingredient` | `id` | `bigint` | PK, auto-increment |
+| | `name` | `varchar` | |
+| | `amount` | `varchar` | free-form, e.g. `200 g` |
+| | `recipe_id` | `bigint` | FK → `recipe.id`, cascade delete |
+| `favourite` | `id` | `bigint` | PK, auto-increment |
+| | `user_email` | `varchar` | who saved it |
+| | `saved_at` | `timestamp` | set on insert |
+| | `recipe_id` | `bigint` | FK → `recipe.id` |
+
+The corresponding class-level view (Analysis Object Model) is in
+[`system-structure.md`](system-structure.md).
+
 ## Quick start (Docker Compose)
 
 Brings up Postgres + the three Spring services + the GenAI service + the web
