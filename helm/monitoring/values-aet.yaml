@@ -1,8 +1,7 @@
 prometheusOperator:
   createCustomResourceBindings: false
   rbac:
-    create: true
-    useClusterRole: false
+    create: false
   namespaces:
     releaseNamespace: true
   admissionWebhooks:
