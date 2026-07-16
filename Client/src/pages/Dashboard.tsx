@@ -786,17 +786,17 @@ function Dashboard() {
                         <h3 style={{ margin: '0 0 20px 0', color: '#2c3e50' }}>Add Ingredient to Inventory</h3>
 
                         <form onSubmit={handleAddNewItem}>
-                            <label style={{ fontSize: '14px', fontWeight: 'bold', color: '#555' }}>Ingredient Name</label>
-                            <input type="text" placeholder="e.g. Garlic, Beef, Tomatoes" value={newName} onChange={e => setNewName(e.target.value)} style={inputStyle} required />
+                            <label htmlFor="add-item-name" style={{ fontSize: '14px', fontWeight: 'bold', color: '#555' }}>Ingredient Name</label>
+                            <input id="add-item-name" type="text" placeholder="e.g. Garlic, Beef, Tomatoes" value={newName} onChange={e => setNewName(e.target.value)} style={inputStyle} required />
 
                             <div style={{ display: 'flex', gap: '15px' }}>
                                 <div style={{ flex: 1 }}>
-                                    <label style={{ fontSize: '14px', fontWeight: 'bold', color: '#555' }}>Quantity</label>
-                                    <input type="number" step="any" min="0.1" value={newQuantity} onChange={e => setNewQuantity(parseFloat(e.target.value) || 0)} style={inputStyle} required />
+                                    <label htmlFor="add-item-quantity" style={{ fontSize: '14px', fontWeight: 'bold', color: '#555' }}>Quantity</label>
+                                    <input id="add-item-quantity" type="number" step="any" min="0.1" value={newQuantity} onChange={e => setNewQuantity(parseFloat(e.target.value) || 0)} style={inputStyle} required />
                                 </div>
                                 <div style={{ flex: 1 }}>
-                                    <label style={{ fontSize: '14px', fontWeight: 'bold', color: '#555' }}>Unit Type</label>
-                                    <select value={newUnit} onChange={e => setNewUnit(e.target.value as UnitType)} style={inputStyle}>
+                                    <label htmlFor="add-item-unit" style={{ fontSize: '14px', fontWeight: 'bold', color: '#555' }}>Unit Type</label>
+                                    <select id="add-item-unit" value={newUnit} onChange={e => setNewUnit(e.target.value as UnitType)} style={inputStyle}>
                                         <option value="GRAM">GRAM</option>
                                         <option value="KILOGRAM">KILOGRAM</option>
                                         <option value="MILLILITRE">MILLILITRE</option>
@@ -811,8 +811,8 @@ function Dashboard() {
                                 </div>
                             </div>
 
-                            <label style={{ fontSize: '14px', fontWeight: 'bold', color: '#555' }}>Expiration Date</label>
-                            <input type="date" value={newExpiry} onChange={e => setNewExpiry(e.target.value)} style={inputStyle} required />
+                            <label htmlFor="add-item-expiry" style={{ fontSize: '14px', fontWeight: 'bold', color: '#555' }}>Expiration Date</label>
+                            <input id="add-item-expiry" type="date" value={newExpiry} onChange={e => setNewExpiry(e.target.value)} style={inputStyle} required />
 
                             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px' }}>
                                 <button type="button" onClick={() => setIsModalOpen(false)} style={{ padding: '10px 16px', backgroundColor: '#95a5a6', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }}>

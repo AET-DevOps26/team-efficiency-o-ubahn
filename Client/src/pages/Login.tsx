@@ -63,8 +63,9 @@ function Login({ onLoginSuccess, onToggleView }: LoginProps) {
                 <form onSubmit={handleSubmit}>
 
                     <div style={{ marginBottom: '15px' }}>
-                        <label style={{ display: 'block', marginBottom: '5px' }}>Email Address:</label>
+                        <label htmlFor="login-email" style={{ display: 'block', marginBottom: '5px' }}>Email Address:</label>
                         <input
+                            id="login-email"
                             type="email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
@@ -75,8 +76,9 @@ function Login({ onLoginSuccess, onToggleView }: LoginProps) {
                     </div>
 
                     <div style={{ marginBottom: '15px' }}>
-                        <label style={{ display: 'block', marginBottom: '5px' }}>Password:</label>
+                        <label htmlFor="login-password" style={{ display: 'block', marginBottom: '5px' }}>Password:</label>
                         <input
+                            id="login-password"
                             type="password"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
