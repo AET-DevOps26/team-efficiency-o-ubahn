@@ -1,7 +1,11 @@
-# helm/monitoring/values-aet.yaml
-
 prometheusOperator:
   createCustomResourceBindings: false
+  rbac:
+    namespaced: true
+  namespaces:
+    releaseNamespace: true
+  admissionWebhooks:
+      enabled: false
 
 prometheus:
   nodeExporter:
@@ -17,9 +21,11 @@ prometheus:
           accessModes: ["ReadWriteOnce"]
           resources:
             requests:
-              storage: 2Gi # Keep it small for the university cluster
+              storage: 2Gi
 
 grafana:
+  rbac:
+    namespaced: true
   persistence:
     enabled: true
     size: 2Gi
@@ -28,3 +34,11 @@ grafana:
       enabled: true
       label: grafana_dashboard
       folder: /var/lib/grafana/dashboards/providers
+  nodeExporter:
+    enabled: false
+  prometheus-node-exporter:
+    enabled: false
+  kubeStateMetrics:
+    enabled: false
+  kube-state-metrics:
+    enabled: false
