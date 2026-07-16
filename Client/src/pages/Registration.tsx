@@ -82,8 +82,9 @@ function Register({ onRegisterSuccess, onToggleView }: RegisterProps) {
                 <form onSubmit={handleSubmit}>
 
                     <div style={{ marginBottom: '15px' }}>
-                        <label style={{ display: 'block', marginBottom: '5px', textAlign: 'center' }}>Email Address:</label>
+                        <label htmlFor="register-email" style={{ display: 'block', marginBottom: '5px', textAlign: 'center' }}>Email Address:</label>
                         <input
+                            id="register-email"
                             type="email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
@@ -94,8 +95,9 @@ function Register({ onRegisterSuccess, onToggleView }: RegisterProps) {
                     </div>
 
                     <div style={{ marginBottom: '15px' }}>
-                        <label style={{ display: 'block', marginBottom: '5px', textAlign: 'center' }}>Password:</label>
+                        <label htmlFor="register-password" style={{ display: 'block', marginBottom: '5px', textAlign: 'center' }}>Password:</label>
                         <input
+                            id="register-password"
                             type="password"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
@@ -106,8 +108,9 @@ function Register({ onRegisterSuccess, onToggleView }: RegisterProps) {
                     </div>
 
                     <div style={{ marginBottom: '15px' }}>
-                        <label style={{ display: 'block', marginBottom: '5px', textAlign: 'center' }}>Confirm Password:</label>
+                        <label htmlFor="register-confirm-password" style={{ display: 'block', marginBottom: '5px', textAlign: 'center' }}>Confirm Password:</label>
                         <input
+                            id="register-confirm-password"
                             type="password"
                             value={confirmPassword}
                             onChange={(e) => setConfirmPassword(e.target.value)}
@@ -119,8 +122,9 @@ function Register({ onRegisterSuccess, onToggleView }: RegisterProps) {
 
                     {/* Cleaned Up Allergies Section */}
                     <div style={{ marginBottom: '15px' }}>
-                        <label style={{ display: 'block', marginBottom: '5px', textAlign: 'center' }}>Allergies:</label>
+                        <label htmlFor="register-allergies" style={{ display: 'block', marginBottom: '5px', textAlign: 'center' }}>Allergies:</label>
                         <input
+                            id="register-allergies"
                             type="text"
                             value={allergiesInput}
                             onChange={(e) => setAllergiesInput(e.target.value)}
@@ -130,8 +134,9 @@ function Register({ onRegisterSuccess, onToggleView }: RegisterProps) {
                     </div>
 
                     <div style={{ marginBottom: '20px' }}>
-                        <label style={{ display: 'block', marginBottom: '5px', textAlign: 'center' }}>Dietary Preference:</label>
+                        <label htmlFor="register-diet-focus" style={{ display: 'block', marginBottom: '5px', textAlign: 'center' }}>Dietary Preference:</label>
                         <input
+                            id="register-diet-focus"
                             type="text"
                             value={preferencesInput}
                             onChange={(e) => setPreferencesInput(e.target.value)}
