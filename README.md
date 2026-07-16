@@ -108,6 +108,50 @@ backends, so switching is a single env var (`GENAI_PROVIDER=cloud|local`):
 
 See [`GenAI-Service/README.md`](GenAI-Service/README.md) for the full GenAI guide.
 
+## Testing
+
+**Client** — Vitest + React Testing Library, jsdom environment.
+
+```bash
+cd Client
+npm ci
+npm run test        # run once (also what CI runs)
+npx vitest           # watch mode
+```
+
+Tests live alongside the code they cover (`Client/src/**/*.test.tsx`), with
+setup in [`Client/src/setupTests.ts`](Client/src/setupTests.ts). CI (`ci.yml`)
+runs `npm run test` before `npm run build` on every PR and push to `main`.
+
+**Server** — JUnit 5 via Spring Boot's test starter, one Gradle module per
+service.
+
+```bash
+cd Server
+./gradlew :user-service:test
+./gradlew :inventory-service:test
+./gradlew :recipe-service:test
+# or all three:
+./gradlew test
+```
+
+Tests live under each service's `src/test/java/...` (e.g.
+[`user-service/src/test/java/com/fridgeai/user`](Server/user-service/src/test/java/com/fridgeai/user)),
+covering controllers, services, JWT filter/util. CI runs
+`./gradlew :<service>:test` before `bootJar` for each service, in parallel.
+
+**GenAI-Service** — pytest.
+
+```bash
+cd GenAI-Service
+pip install -r requirements-dev.txt
+pytest -v
+```
+
+Tests live in [`GenAI-Service/tests/`](GenAI-Service/tests), with shared
+fixtures in [`conftest.py`](GenAI-Service/conftest.py). CI runs `pytest -v`,
+then a smoke import of `app.main` to confirm the app boots.
+
 ## API reference
 
 All Spring endpoints are served under the `/api` prefix; everything except
