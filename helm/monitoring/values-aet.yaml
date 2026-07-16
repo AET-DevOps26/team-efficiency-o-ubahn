@@ -34,11 +34,15 @@ grafana:
       enabled: true
       label: grafana_dashboard
       folder: /var/lib/grafana/dashboards/providers
-  nodeExporter:
-    enabled: false
-  prometheus-node-exporter:
-    enabled: false
-  kubeStateMetrics:
-    enabled: false
-  kube-state-metrics:
-    enabled: false
+
+nodeExporter:
+  enabled: false
+prometheus-node-exporter:
+  enabled: false
+kubeStateMetrics:
+  enabled: false
+kube-state-metrics:
+  enabled: false
+  rbac:
+    create: false
+    useClusterRole: false
