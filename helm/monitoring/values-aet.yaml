@@ -1,0 +1,30 @@
+# helm/monitoring/values-aet.yaml
+
+prometheusOperator:
+  createCustomResourceBindings: false
+
+prometheus:
+  nodeExporter:
+    enabled: false
+  prometheusSpec:
+    serviceMonitorNamespaceSelector: {}
+    serviceMonitorSelector:
+      matchLabels:
+        monitoring: "true"
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 2Gi # Keep it small for the university cluster
+
+grafana:
+  persistence:
+    enabled: true
+    size: 2Gi
+  sidecar:
+    dashboards:
+      enabled: true
+      label: grafana_dashboard
+      folder: /var/lib/grafana/dashboards/providers
