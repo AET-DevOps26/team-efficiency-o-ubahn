@@ -79,6 +79,7 @@ jobs:
           helm upgrade --install prometheus prometheus-community/kube-prometheus-stack \
             --namespace ${{ env.MONITORING_NAMESPACE }} \
             -f helm/monitoring/values-aet.yaml \
+            --skip-crds \
             --wait --timeout 8m
 
       - name: Show rollout
