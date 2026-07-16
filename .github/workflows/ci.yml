@@ -19,11 +19,14 @@ jobs:
           distribution: temurin
           java-version: '21'
       - uses: gradle/actions/setup-gradle@v4
-      - name: Build ${{ matrix.service }}
+      - name: Test ${{ matrix.service }}
         working-directory: Server
         run: |
           chmod +x gradlew
-          ./gradlew :${{ matrix.service }}:bootJar --no-daemon
+          ./gradlew :${{ matrix.service }}:test --no-daemon
+      - name: Build ${{ matrix.service }}
+        working-directory: Server
+        run: ./gradlew :${{ matrix.service }}:bootJar --no-daemon
 
   client:
     runs-on: ubuntu-latest
@@ -52,7 +55,10 @@ jobs:
           cache-dependency-path: GenAI-Service/requirements.txt
       - name: Install
         working-directory: GenAI-Service
-        run: pip install -r requirements.txt
+        run: pip install -r requirements-dev.txt
+      - name: Test
+        working-directory: GenAI-Service
+        run: pytest -v
       - name: Smoke check (app imports and boots)
         working-directory: GenAI-Service
         run: python -c "import app.main; print('GenAI service imports OK')"
