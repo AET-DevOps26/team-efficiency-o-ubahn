@@ -63,12 +63,14 @@ metadata:
   name: {{ $name }}
   labels:
     {{- include "fridgeai.labels" (dict "name" $name "root" $) | nindent 4 }}
+    monitoring: "true"
 spec:
   type: {{ $svc.service.type | default "ClusterIP" }}
   selector:
     {{- include "fridgeai.selectorLabels" (dict "name" $name "root" $) | nindent 4 }}
   ports:
     - port: {{ $svc.service.port | default $svc.port }}
+      name: http
       targetPort: {{ $svc.port }}
       protocol: TCP
 {{- end }}

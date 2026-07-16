@@ -17,7 +17,6 @@ concurrency:
 
 env:
   NAMESPACE: ge48yep-devops26
-  MONITORING_NAMESPACE: go29kid-monitoring
 
 jobs:
   deploy:
@@ -69,21 +68,5 @@ jobs:
             --set-string secrets.logosApiKey='${{ secrets.LOGOS_API_KEY }}' \
             --wait --timeout 8m
 
-      - name: Add Prometheus Helm Repo
-        run: |
-          helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-          helm repo update
-
-      - name: Helm deploy Prometheus & Grafana
-        run: |
-          helm upgrade --install prometheus prometheus-community/kube-prometheus-stack \
-            --namespace ${{ env.MONITORING_NAMESPACE }} \
-            -f helm/monitoring/values-aet.yaml \
-            --skip-crds \
-            --wait --timeout 8m
-
       - name: Show rollout
         run: kubectl get pods,svc,ingress -n ${{ env.NAMESPACE }}
-
-      - name: Show Monitoring Rollout
-        run: kubectl get pods,svc -n ${{ env.MONITORING_NAMESPACE }}
