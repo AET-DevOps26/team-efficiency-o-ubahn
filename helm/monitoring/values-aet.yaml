@@ -28,6 +28,7 @@ prometheus:
 grafana:
   rbac:
     create: true
+    namespaced: true
   persistence:
     enabled: true
     size: 2Gi
