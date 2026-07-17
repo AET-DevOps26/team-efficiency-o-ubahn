@@ -14,7 +14,7 @@ Everyday home cooks — especially students and busy individuals — who want to
 
 ## GenAI Integration
 
-The GenAI component is the core of the app. Rather than matching ingredients to a fixed recipe database, it dynamically generates recipes based on the user's available ingredients, expiry priorities, and dietary restrictions. It supports both cloud-based (OpenAI API) and local (GPT4All / LLaMA) models, and runs as an independent Python microservice.
+The GenAI component is the core of the app. Rather than matching ingredients to a fixed recipe database, it dynamically generates recipes based on the user's available ingredients, expiry priorities, and dietary restrictions. It speaks the OpenAI-compatible API for both backends — cloud-based (TUM's Logos, model `openai/gpt-oss-120b`) and local (Ollama / llama.cpp) — switched by a single environment variable, and runs as an independent Python microservice.
 
 ---
 
@@ -27,7 +27,7 @@ A user has chicken, rice, and garlic expiring soon. FridgeAI prioritises those i
 A user with a nut allergy sets it in their profile. Every generated recipe automatically excludes nuts — no manual checking required.
 
 **Scenario 3 — New User**
-A student adds eggs, cheese, and leftover pasta to their inventory. FridgeAI generates two recipes, and they save their favourite to revisit later.
+A student adds eggs, cheese, and leftover pasta to their inventory. FridgeAI generates a recipe from them — regenerating on demand until one appeals — and the student saves it as a favourite to revisit later.
 
 **Scenario 4 — Expiry Alerts**
 The app highlights ingredients close to expiry on the dashboard and prioritises them when generating the next recipe suggestion.

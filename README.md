@@ -22,6 +22,20 @@ exactly what you have on hand.
 | [`helm/fridgeai/`](helm/fridgeai) | Kubernetes Helm chart for AET cluster deployment. |
 | [`infrastructure/`](infrastructure) | Terraform (Azure VM) + Ansible (Docker Compose deploy). |
 
+## Team & responsibilities
+
+Each student owns their primary areas (client / server / GenAI, per the course
+model) and shares the DevOps workflow. Ownership means being the main author
+and reviewer for that area — integration, deployment, and debugging were done
+collaboratively across boundaries. Contributions are traceable through commit
+and PR authorship and code-review participation on merged PRs.
+
+| Student | Primary areas | Key artifacts |
+|---------|---------------|---------------|
+| Klaudia Paździerz | **Server, tests, Azure** | The three Spring Boot microservices ([`Server/`](Server)); the server test suites ([`Server/*/src/test`](Server)); Azure VM provisioning and deployment ([`infrastructure/terraform/`](infrastructure/terraform), [`infrastructure/ansible/`](infrastructure/ansible), [`deploy.yml`](.github/workflows/deploy.yml)) |
+| Mohamed Morsy | **Web client, observability** | React web client ([`Client/`](Client)) and its nginx reverse proxy connecting the UI to the backend services; observability stack (Prometheus + Grafana: [`infra/monitoring/`](infra/monitoring), [`helm/fridgeai/dashboards/`](helm/fridgeai/dashboards), [`helm/fridgeai/alerts.yml`](helm/fridgeai/alerts.yml)) |
+| Mostafa Sherif | **Kubernetes, GenAI, CI** | AET cluster deployment via Helm ([`helm/fridgeai/`](helm/fridgeai), [`deploy-aet.yml`](.github/workflows/deploy-aet.yml)); GenAI service ([`GenAI-Service/`](GenAI-Service)) and its integration with `recipe-service`; CI workflows ([`.github/workflows/`](.github/workflows)); parts of the observability stack |
+
 ## Architecture
 
 A single-page web client talks to three Spring Boot REST microservices behind one
@@ -80,7 +94,7 @@ and preferences from `user-service` (internal endpoints), then calls
 | API docs | springdoc-openapi (aggregated Swagger UI) per Spring service; FastAPI docs for GenAI |
 | Infra / CI | Docker Compose, Helm v3, Kubernetes (AET cluster), Terraform + Ansible (Azure VM), GitHub Actions, GHCR |
 
-d## Database schema
+## Database schema
 
 One PostgreSQL 16 instance, one database (`fridgeai`), one schema per service —
 created on first startup by
@@ -286,13 +300,13 @@ Or hit a service directly on its own port (when published), e.g.
 The app and all docs are served behind the client nginx, so just append the
 paths above to the base URL.
 
-**Azure VM** — base URL **http://135.225.128.167**
+**Azure VM** — base URL **http://51.12.50.79**
 
 | Resource | Link |
 |----------|------|
-| App | <http://135.225.128.167> |
-| Swagger UI | <http://135.225.128.167/swagger-ui.html> |
-| GenAI docs | <http://135.225.128.167/genai/docs> |
+| App | <http://51.12.50.79> |
+| Swagger UI | <http://51.12.50.79/swagger-ui.html> |
+| GenAI docs | <http://51.12.50.79/genai/docs> |
 
 **AET Kubernetes** — base URL **https://ge48yep-devops-ss26.stud.k8s.aet.cit.tum.de**
 
@@ -334,7 +348,7 @@ paths above to the base URL.
 
 GitHub Actions workflows in [`.github/workflows/`](.github/workflows/):
 
-- **`ci.yml`** — on every PR and push to `main`: builds each Spring service (`gradlew bootJar`, JDK 21), the client (`npm run build`, Node 22), and smoke-imports the GenAI service (Python 3.12).
+- **`ci.yml`** — on every PR and push to `main`, three parallel jobs test and build every entity: a 3-way matrix runs each Spring service's unit tests then `gradlew bootJar` (JDK 21); the client runs its Vitest suite then the production build (`tsc` + Vite, Node 22); the GenAI job runs `pytest` then a smoke import of the app (Python 3.12). A failure in any job fails the workflow — nothing is skipped or advisory.
 - **`build-images.yml`** — builds the five service images and pushes them to GHCR, tagged by commit SHA.
 - **`deploy-aet.yml`** — auto-runs after a successful image build on `main`; `helm upgrade --install` to the AET cluster (namespace **`ge48yep-devops26`**, values `values-aet.yaml`, image tag = commit SHA).
 - **`deploy.yml`** — deploys to the Azure VM via Ansible (installs Docker, copies `docker-compose.yml`, pulls GHCR images, `docker compose up -d`).
@@ -362,7 +376,7 @@ helm upgrade --install fridgeai ./helm/fridgeai \
   --set-string secrets.logosApiKey=<key>
 ```
 
-### Azure VM (Docker Compose, IP `135.225.128.167`)
+### Azure VM (Docker Compose, IP `51.12.50.79`)
 ```bash
 # 1. provision the VM (one-time, local)
 cd infrastructure/terraform
@@ -375,11 +389,58 @@ ansible-playbook -i infrastructure/ansible/inventory.ini \
 ```
 The playbook installs Docker, copies `docker-compose.yml`, logs in to GHCR, and
 runs `docker compose up -d`. The client nginx then serves the app on port 80 at
-**http://135.225.128.167** (Postgres is not published externally).
+**http://51.12.50.79** (Postgres is not published externally).
 
 > **Security note:** the default `JWT_SECRET`, `POSTGRES_PASSWORD`, Helm
 > `secrets.jwtSecret` / `secrets.postgresPassword`, and `LOGOS_API_KEY` are
 > placeholders and must be overridden for any real deployment.
+
+## Observability
+
+Prometheus collects request counts, latency and error rates from
+every service, Grafana turns them into a dashboard, and an alert fires if any
+service goes dark. Everything is provisioned from files in this repo — no
+manual clicking is needed to set up datasources, dashboards or rules, and the
+same configuration drives both Docker Compose and Kubernetes.
+
+### Where to look
+
+| | Prometheus | Grafana (login: `admin` / `admin`) |
+|---|------------|------------------------------------|
+| **Local (Compose)** | <http://localhost:9090> | <http://localhost:3000> |
+| **AET cluster** | [`/prometheus`](https://ge48yep-devops-ss26.stud.k8s.aet.cit.tum.de/prometheus) on the app host | [`/grafana`](https://ge48yep-devops-ss26.stud.k8s.aet.cit.tum.de/grafana) on the app host |
+
+In Grafana the **FridgeAI Overview** dashboard is preloaded as the home
+dashboard; in Prometheus, `Status → Targets` shows the scrape health of every
+service and `/alerts` shows the alert state.
+
+### How it works
+
+Prometheus pulls metrics from all five targets every 15 seconds: the three
+Spring services publish Micrometer metrics on `/actuator/prometheus` (per-endpoint
+request counts, durations and status codes, plus JVM internals), the GenAI
+service publishes FastAPI request metrics on `/metrics`
+(`prometheus-fastapi-instrumentator`), and Prometheus watches itself. The
+scrape configuration lives in
+[`infra/monitoring/prometheus.yml`](infra/monitoring/prometheus.yml) for
+Compose and in the chart's
+[`prometheus-configmap.yaml`](helm/fridgeai/templates/prometheus-configmap.yaml)
+for Kubernetes, where Prometheus is served under the `/prometheus` route
+prefix behind the shared ingress.
+
+### Dashboard & alerting
+
+The dashboard committed at
+[`helm/fridgeai/dashboards/fridgeai-overview.json`](helm/fridgeai/dashboards/fridgeai-overview.json)
+(the submitted `.json` artifact, mounted by Compose and embedded in the chart)
+tracks four things across the server services and GenAI: scrape targets up,
+request rate per service, share of 5xx responses, and average request latency.
+
+One alert rule is defined in
+[`helm/fridgeai/alerts.yml`](helm/fridgeai/alerts.yml): **`ServiceDown`** —
+if any scrape target stays unreachable for 2 minutes, the alert turns critical
+and appears on Prometheus's `/alerts` page. Scaling a service to zero replicas
+is an easy way to watch it fire (and resolve) live.
 
 ## Docs
 

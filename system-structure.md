@@ -6,7 +6,7 @@
 |---|---|
 | Client | React |
 | Server | Spring Boot (Java) — 3 microservices |
-| GenAI Service | Python + LangChain |
+| GenAI Service | Python + FastAPI (`openai` SDK, OpenAI-compatible: Logos cloud / local Ollama) |
 | Database | PostgreSQL |
 | Auth | JWT issued by User Service, validated by other services |
 | Communication | REST between all services |
@@ -24,8 +24,8 @@ Manages the user's ingredient inventory — adding, updating, and removing ingre
 ### Recipe Service
 The core service. Receives a recipe generation request from the client, fetches the user's ingredients from the Inventory Service and preferences from the User Service, then calls the GenAI Service to generate a recipe. Also handles saving and retrieving favourite recipes.
 
-### GenAI Service (Python / LangChain)
-An independent Python microservice that receives a structured prompt (ingredients + preferences) and returns a generated recipe.
+### GenAI Service (Python / FastAPI)
+An independent Python microservice that receives the user's ingredients (with expiry dates) and preferences, builds a structured prompt, and returns a generated recipe as JSON via an OpenAI-compatible LLM (Logos cloud in production, local Ollama in dev).
 
 ---
 
@@ -55,7 +55,7 @@ classDiagram
     }
     class Inventory {
         +Long id
-        +Long userId
+        +String userEmail
     }
     class Recipe {
         +Long id
@@ -71,7 +71,7 @@ classDiagram
     }
     class Favourite {
         +Long id
-        +Long userId
+        +String userEmail
         +Long recipeId
         +LocalDateTime savedAt
     }
@@ -137,7 +137,7 @@ graph TD
         RS[Recipe Service]
     end
 
-    GenAI[GenAI Service\nPython / LangChain]
+    GenAI[GenAI Service\nPython / FastAPI]
 
     subgraph PostgreSQL
         UDB[(user schema)]
