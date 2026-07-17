@@ -1,0 +1,19 @@
+# Prometheus alerting rules — single source of truth for both the Helm chart
+# (loaded via .Files.Get in templates/prometheus-configmap.yaml) and local
+# docker-compose (mounted into the prometheus service). Firing alerts show up
+# on Prometheus's /alerts page; routing to email/Slack would additionally
+# need Alertmanager.
+groups:
+  - name: fridgeai
+    rules:
+      # Service down: any scrape target (user/inventory/recipe/genai or
+      # Prometheus itself) unreachable for 2 minutes. `up` is synthesised per
+      # target by Prometheus, so this fires regardless of app instrumentation.
+      - alert: ServiceDown
+        expr: up == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "{{ $labels.job }} is down"
+          description: "Prometheus target {{ $labels.job }} ({{ $labels.instance }}) has been unreachable for 2 minutes."

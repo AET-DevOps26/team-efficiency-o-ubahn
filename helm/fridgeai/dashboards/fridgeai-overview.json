@@ -1,0 +1,137 @@
+{
+  "title": "FridgeAI Overview",
+  "uid": "fridgeai-overview",
+  "tags": ["fridgeai"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-1h", "to": "now" },
+  "annotations": { "list": [] },
+  "templating": { "list": [] },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Targets up",
+      "description": "Number of Prometheus scrape targets currently reachable (5 = all healthy).",
+      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "refId": "A", "expr": "sum(up)", "legendFormat": "targets up" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 4 },
+              { "color": "green", "value": 5 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "reduceOptions": { "calcs": ["lastNotNull"] }
+      }
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Request rate by service (req/s)",
+      "description": "HTTP requests per second. Spring services via Micrometer, GenAI via prometheus-fastapi-instrumentator.",
+      "gridPos": { "h": 6, "w": 18, "x": 6, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (job) (rate(http_server_requests_seconds_count[5m]))",
+          "legendFormat": "{{job}}"
+        },
+        {
+          "refId": "B",
+          "expr": "sum by (job) (rate(http_requests_total[5m]))",
+          "legendFormat": "{{job}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "reqps", "custom": { "fillOpacity": 10 } },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "table", "placement": "right", "calcs": ["mean", "lastNotNull"] }
+      }
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "5xx error rate (% of requests)",
+      "description": "Share of HTTP responses that are server errors, per service, over 5m windows.",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 6 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (job) (rate(http_server_requests_seconds_count{status=~\"5..\"}[5m])) / sum by (job) (rate(http_server_requests_seconds_count[5m]))",
+          "legendFormat": "{{job}}"
+        },
+        {
+          "refId": "B",
+          "expr": "sum by (job) (rate(http_requests_total{status=\"5xx\"}[5m])) / sum by (job) (rate(http_requests_total[5m]))",
+          "legendFormat": "{{job}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1,
+          "custom": { "fillOpacity": 10 },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 0.05 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "table", "placement": "right", "calcs": ["mean", "lastNotNull"] }
+      }
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Average request latency (s)",
+      "description": "Mean HTTP request duration per service over 5m windows (rate(sum)/rate(count)).",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 6 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (job) (rate(http_server_requests_seconds_sum[5m])) / sum by (job) (rate(http_server_requests_seconds_count[5m]))",
+          "legendFormat": "{{job}}"
+        },
+        {
+          "refId": "B",
+          "expr": "sum by (job) (rate(http_request_duration_seconds_sum[5m])) / sum by (job) (rate(http_request_duration_seconds_count[5m]))",
+          "legendFormat": "{{job}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "s", "custom": { "fillOpacity": 10 } },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "table", "placement": "right", "calcs": ["mean", "lastNotNull"] }
+      }
+    }
+  ]
+}
