@@ -7,7 +7,6 @@ services:
       POSTGRES_DB: fridgeai
       POSTGRES_USER: fridgeai
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fridgeai}
-      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: health,info,prometheus
     ports:
       - "5432:5432"
     volumes:
