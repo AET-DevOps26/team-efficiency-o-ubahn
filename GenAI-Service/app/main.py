@@ -3,6 +3,7 @@ import logging
 
 from fastapi import FastAPI, HTTPException
 from openai import OpenAIError
+from prometheus_fastapi_instrumentator import Instrumentator
 
 from .config import get_settings
 from .llm import RecipeGenerator
@@ -23,6 +24,7 @@ app = FastAPI(
     redoc_url="/genai/redoc",
 )
 
+Instrumentator().instrument(app).expose(app)
 
 @app.get("/health")
 def health():

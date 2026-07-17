@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "fridgeai.fullname" . }}-prometheus
+  labels: {{- include "fridgeai.labels" (dict "name" "prometheus" "root" $) | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {{- include "fridgeai.selectorLabels" (dict "name" "prometheus" "root" $) | nindent 6 }}
+  template:
+    metadata:
+      labels: {{- include "fridgeai.labels" (dict "name" "prometheus" "root" $) | nindent 8 }}
+    spec:
+      containers:
+        - name: prometheus
+          image: prom/prometheus:v2.55.1
+          args:
+            - '--config.file=/etc/prometheus/prometheus.yml'
+          volumeMounts:
+            - name: config-volume
+              mountPath: /etc/prometheus/prometheus.yml
+              subPath: prometheus.yml
+      volumes:
+        - name: config-volume
+          configMap:
+            name: {{ include "fridgeai.fullname" . }}-prometheus-config
