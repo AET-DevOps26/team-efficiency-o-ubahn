@@ -448,4 +448,5 @@ is an easy way to watch it fire (and resolve) live.
 |----------|-------------|
 | [Problem Statement](problem-statement.md) | Product vision and user scenarios |
 | [System Structure](system-structure.md) | Service breakdown and architecture |
+| [Backlog board](https://github.com/orgs/AET-DevOps26/projects/43) | Planned and ongoing work (GitHub project board) |
 | [Backlog](backlog.md) | Planned work |
