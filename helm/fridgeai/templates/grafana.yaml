@@ -1,0 +1,112 @@
+{{- if .Values.grafana.enabled }}
+# Grafana — served under {{ .Values.grafana.routePrefix }} on the shared
+# ingress host (login-gated). Datasource and dashboards are provisioned from
+# ConfigMaps so the stack is usable on first boot; dashboard JSONs live in
+# helm/fridgeai/dashboards/ (shared with docker-compose).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-provisioning
+  labels: {{- include "fridgeai.labels" (dict "name" "grafana" "root" $) | nindent 4 }}
+data:
+  datasource.yml: |
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        uid: prometheus
+        type: prometheus
+        access: proxy
+        url: http://prometheus:9090
+        isDefault: true
+  dashboards.yml: |
+    apiVersion: 1
+    providers:
+      - name: default
+        orgId: 1
+        folder: ""
+        type: file
+        disableDeletion: false
+        editable: true
+        options:
+          path: /var/lib/grafana/dashboards
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboards
+  labels: {{- include "fridgeai.labels" (dict "name" "grafana" "root" $) | nindent 4 }}
+data:
+{{- range $path, $bytes := .Files.Glob "dashboards/*.json" }}
+  {{ base $path }}: |
+{{ $.Files.Get $path | indent 4 }}
+{{- end }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+  labels: {{- include "fridgeai.labels" (dict "name" "grafana" "root" $) | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {{- include "fridgeai.selectorLabels" (dict "name" "grafana" "root" $) | nindent 6 }}
+  template:
+    metadata:
+      labels: {{- include "fridgeai.labels" (dict "name" "grafana" "root" $) | nindent 8 }}
+      annotations:
+        checksum/dashboards: {{ (.Files.Glob "dashboards/*.json").AsConfig | sha256sum }}
+    spec:
+      containers:
+        - name: grafana
+          image: {{ .Values.grafana.image }}
+          ports:
+            - containerPort: 3000
+          env:
+            - name: GF_SECURITY_ADMIN_USER
+              value: {{ .Values.grafana.adminUser | quote }}
+            - name: GF_SECURITY_ADMIN_PASSWORD
+              value: {{ .Values.grafana.adminPassword | quote }}
+            - name: GF_SERVER_ROOT_URL
+              value: "%(protocol)s://%(domain)s{{ .Values.grafana.routePrefix }}/"
+            - name: GF_SERVER_SERVE_FROM_SUB_PATH
+              value: "true"
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+          resources: {{- toYaml .Values.grafana.resources | nindent 12 }}
+          volumeMounts:
+            - name: provisioning
+              mountPath: /etc/grafana/provisioning/datasources/datasource.yml
+              subPath: datasource.yml
+            - name: provisioning
+              mountPath: /etc/grafana/provisioning/dashboards/dashboards.yml
+              subPath: dashboards.yml
+            - name: dashboards
+              mountPath: /var/lib/grafana/dashboards
+      volumes:
+        - name: provisioning
+          configMap:
+            name: grafana-provisioning
+        - name: dashboards
+          configMap:
+            name: grafana-dashboards
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana
+  labels: {{- include "fridgeai.labels" (dict "name" "grafana" "root" $) | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector: {{- include "fridgeai.selectorLabels" (dict "name" "grafana" "root" $) | nindent 4 }}
+  ports:
+    - name: http
+      port: 3000
+      targetPort: 3000
+      protocol: TCP
+{{- end }}

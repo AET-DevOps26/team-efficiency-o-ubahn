@@ -1,7 +1,8 @@
+{{- if .Values.prometheus.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "fridgeai.fullname" . }}-prometheus
+  name: prometheus
   labels: {{- include "fridgeai.labels" (dict "name" "prometheus" "root" $) | nindent 4 }}
 spec:
   replicas: 1
@@ -10,17 +11,52 @@ spec:
   template:
     metadata:
       labels: {{- include "fridgeai.labels" (dict "name" "prometheus" "root" $) | nindent 8 }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/prometheus-configmap.yaml") . | sha256sum }}
     spec:
       containers:
         - name: prometheus
-          image: prom/prometheus:v2.55.1
+          image: {{ .Values.prometheus.image }}
           args:
             - '--config.file=/etc/prometheus/prometheus.yml'
+            {{- with .Values.prometheus.routePrefix }}
+            - '--web.external-url={{ . }}'
+            - '--web.route-prefix={{ . }}'
+            {{- end }}
+          ports:
+            - containerPort: 9090
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.prometheus.routePrefix }}/-/ready
+              port: 9090
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.prometheus.routePrefix }}/-/healthy
+              port: 9090
+          resources: {{- toYaml .Values.prometheus.resources | nindent 12 }}
           volumeMounts:
             - name: config-volume
               mountPath: /etc/prometheus/prometheus.yml
               subPath: prometheus.yml
+            - name: config-volume
+              mountPath: /etc/prometheus/alerts.yml
+              subPath: alerts.yml
       volumes:
         - name: config-volume
           configMap:
-            name: {{ include "fridgeai.fullname" . }}-prometheus-config
+            name: prometheus-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus
+  labels: {{- include "fridgeai.labels" (dict "name" "prometheus" "root" $) | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector: {{- include "fridgeai.selectorLabels" (dict "name" "prometheus" "root" $) | nindent 4 }}
+  ports:
+    - name: http
+      port: 9090
+      targetPort: 9090
+      protocol: TCP
+{{- end }}

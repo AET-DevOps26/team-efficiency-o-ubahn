@@ -103,7 +103,8 @@ services:
     ports:
       - "9090:9090"
     volumes:
-      - ./infra/monitoring:/etc/prometheus:ro
+      - ./infra/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./helm/fridgeai/alerts.yml:/etc/prometheus/alerts.yml:ro
       - prometheus_data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
@@ -118,6 +119,24 @@ services:
       - inventory-service
       - recipe-service
       - genai-service
+
+  grafana:
+    image: grafana/grafana:11.4.0
+    container_name: fridgeai-grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+    volumes:
+      - ./infra/monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./helm/fridgeai/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+
 volumes:
   postgres-data:
   prometheus_data:
+  grafana_data:

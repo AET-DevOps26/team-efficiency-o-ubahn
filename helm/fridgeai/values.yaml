@@ -125,6 +125,28 @@ services:
       requests: { cpu: 50m, memory: 64Mi }
       limits:   { memory: 128Mi }
 
+prometheus:
+  enabled: true
+  image: prom/prometheus:v2.55.1
+  # Prometheus is served under this path prefix on the shared ingress host,
+  # e.g. https://<ingress.host>/prometheus
+  routePrefix: /prometheus
+  resources:
+    requests: { cpu: 50m, memory: 256Mi }
+    limits:   { cpu: 200m, memory: 512Mi }
+
+grafana:
+  enabled: true
+  image: grafana/grafana:11.4.0
+  # Grafana is served under this path prefix on the shared ingress host,
+  # e.g. https://<ingress.host>/grafana
+  routePrefix: /grafana
+  adminUser: admin
+  adminPassword: changeme
+  resources:
+    requests: { cpu: 50m, memory: 128Mi }
+    limits:   { cpu: 200m, memory: 256Mi }
+
 ingress:
   enabled: true
   className: nginx
