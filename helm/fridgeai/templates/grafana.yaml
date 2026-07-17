@@ -2,34 +2,8 @@
 # Grafana — served under {{ .Values.grafana.routePrefix }} on the shared
 # ingress host (login-gated). Datasource and dashboards are provisioned from
 # ConfigMaps so the stack is usable on first boot; dashboard JSONs live in
-# helm/fridgeai/dashboards/ (shared with docker-compose).
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: grafana-provisioning
-  labels: {{- include "fridgeai.labels" (dict "name" "grafana" "root" $) | nindent 4 }}
-data:
-  datasource.yml: |
-    apiVersion: 1
-    datasources:
-      - name: Prometheus
-        uid: prometheus
-        type: prometheus
-        access: proxy
-        url: http://prometheus:9090
-        isDefault: true
-  dashboards.yml: |
-    apiVersion: 1
-    providers:
-      - name: default
-        orgId: 1
-        folder: ""
-        type: file
-        disableDeletion: false
-        editable: true
-        options:
-          path: /var/lib/grafana/dashboards
----
+# helm/fridgeai/dashboards/ (shared with docker-compose), datasource/provider
+# config in templates/grafana-provisioning.yaml.
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -55,6 +29,7 @@ spec:
       labels: {{- include "fridgeai.labels" (dict "name" "grafana" "root" $) | nindent 8 }}
       annotations:
         checksum/dashboards: {{ (.Files.Glob "dashboards/*.json").AsConfig | sha256sum }}
+        checksum/provisioning: {{ include (print $.Template.BasePath "/grafana-provisioning.yaml") . | sha256sum }}
     spec:
       containers:
         - name: grafana
